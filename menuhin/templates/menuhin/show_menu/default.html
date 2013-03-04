@@ -1,0 +1,10 @@
+{% load menu_helpers %}
+<ul class="menu">
+{% for node in nodes %}
+    {% ifdepthlt node nodes %}</ul></li>{% endifdepthlt %}
+    {% ifdepthgt node nodes %}<ul class="menu_depth_{{ node.depth }}">{% endifdepthgt %}
+
+    <li id="{{ node.unique_id }}"><a href="{{ node.url }}">{{ node.title }}</a>
+    {% ifchanged %}{% else %}</li>{% endifchanged %}
+{% endfor %}
+</ul>

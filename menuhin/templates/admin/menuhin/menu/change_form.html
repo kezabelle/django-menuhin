@@ -1,0 +1,16 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block after_related_objects %}
+    {% if original and change %}
+        {% load menus %}
+        <fieldset class="module aligned ">
+            <h2>{% trans "menu as a list" %}</h2>
+            <div class="form-row menu-as-a-list">
+                <div>
+                    {% show_menu original.title %}
+                </div>
+            </div>
+        </fieldset>
+    {% endif %}
+{% endblock %}

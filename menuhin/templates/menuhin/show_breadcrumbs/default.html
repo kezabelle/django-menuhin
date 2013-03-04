@@ -1,0 +1,10 @@
+{% if node.ancestors %}
+<ul>
+    {% for ancestor in node.ancestors %}
+        <li>
+        {% if not forloop.first %}&raquo;{% endif %}
+        <a href="{{ ancestor.url }}">{{ ancestor.title }}</a>
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
