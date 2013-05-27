@@ -42,6 +42,9 @@ class Menu(ChangeTracking, Publishing):
 
 
 class MenuNode(object):
+    __slots__ = ('title', 'url', 'unique_id', 'parent_id',
+                 'depth', 'ancestors', 'descendants', 'extra_context')
+
     def __init__(self, title, url, unique_id, parent_id=None, **kwargs):
         self.title = title
         self.url = url
@@ -54,12 +57,10 @@ class MenuNode(object):
         self.descendants = []
         self.extra_context = kwargs or {}
 
-#MenuNode = namedtuple('MenuNode', ['title', 'url', 'unique_id', 'parent_id'])
-
-
 class AncestryCalculator(object):
+    __slots__ = ()
+
     def __call__(self, this_node, other_nodes):
-#        import pdb; pdb.set_trace()
         ancestors = []
         parent = this_node.unique_id
         while parent is not None:
@@ -72,11 +73,16 @@ class AncestryCalculator(object):
 
 
 class DescendantCalculator(object):
+    __slots__ = ()
+
     def __call__(self, this_node, other_nodes):
         this_node.descendants = this_node.ancestors[::-1]
         return this_node
 
+
 class DepthCalculator(object):
+    __slots__ = ('start',)
+
     def __init__(self, start=0):
         self.start = start
 
@@ -215,7 +221,10 @@ class RealTimeMenuCollection(MenuCollection):
         """ Never caches anything """
         return None
 
+
 class MenuHandler(object):
+    __slots__ = ('menus', )
+    
     def __init__(self):
         self.menus = {}
 
@@ -287,78 +296,3 @@ class MenuHandler(object):
         return self
 
 menu_handlers = MenuHandler()
-
-#
-#
-#class Node(Model):
-#    menu = ForeignKey(Menu)
-#    title = CharField(max_length=255)
-#    adjacencies = ManyToManyField('self', symmetrical=False, through='menuhin.Hierarchy')
-#    url = AnyUrlField()
-#    created = DateTimeField(auto_now_add=True)
-#    modified = DateTimeField(auto_now=True)
-#
-##Node.objects.select_related('adjacencies').filter(descendants=F('ancestors__id')).count()
-#    objects = NodeManager()
-#
-#    def __unicode__(self):
-#        """Reserved for admin/form usage."""
-#        return self.title
-#
-#    def get_title(self):
-#        """API compatibility with django-CMS menus"""
-#        return self.title
-#    get_title.short_description = 'Title'
-#    get_title.admin_order_field = 'title'
-#
-#    def get_menu_title(self):
-#        """API compatibility with django-CMS menus"""
-#        return self.get_title()
-#
-#    def get_absolute_url(self):
-#        """Because it's what's expected"""
-#        return self.url
-#    get_absolute_url.short_description = 'Web address'
-#    get_absolute_url.admin_order_field = 'url'
-#
-#    def pk_b36(self):
-#        return int_to_base36(self.pk)
-##
-##    def save(self, *args, **kwargs):
-##        super(Node, self).save(*args, **kwargs)
-##        for node in Hierarchy.objects.filter(descendant=1)
-##            Hierarchy.objects.create(node, 1, node.next_lvl)
-##        Hierarchy.objects.create(node, node, 0)
-#
-#
-#
-#    class Meta:
-#        verbose_name = menuitem_v
-#        verbose_name_plural = menuitem_vp
-#        db_table = 'nodes'
-##        ordering = ['left_sibling']
-#
-#
-#class Hierarchy(Model):
-#    ancestor = ForeignKey(Node, null=True, related_name='ancestors')
-#    descendant = ForeignKey(Node, related_name='descendants')
-#    lvl = PositiveIntegerField(db_index=True)
-#    created = DateTimeField(auto_now_add=True)
-#    modified = DateTimeField(auto_now=True)
-#
-#    #objects = HierarchyManager()
-#
-#    def __unicode__(self):
-#        return 'parent: "%s", child: "%s"' % (self.ancestor, self.descendant)
-#
-#    def next_lvl(self):
-#        return sum([self.lvl, 1])
-#
-#    def previous_lvl(self):
-#        return max(sum([self.lvl, -1]))
-#
-#    class Meta:
-#        db_table = 'adjacencies'
-#        unique_together = ['ancestor', 'descendant']
-#        verbose_name = menurelation_v
-#        verbose_name_plural = menurelation_vp
