@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 import logging
+from urlparse import urlparse
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import SlugField, ForeignKey, CharField
+from django.http import QueryDict
 from django.utils.importlib import import_module
 from model_utils.managers import PassThroughManager
 from helpfulfields.models import ChangeTracking, Publishing
@@ -43,7 +45,7 @@ class Menu(ChangeTracking, Publishing):
 
 class MenuNode(object):
     __slots__ = ('title', 'url', 'unique_id', 'parent_id',
-                 'depth', 'ancestors', 'descendants', 'extra_context')
+                 'depth', 'ancestors', 'descendants', 'activity', 'extra_context')
 
     def __init__(self, title, url, unique_id, parent_id=None, **kwargs):
         self.title = title
@@ -55,12 +57,27 @@ class MenuNode(object):
         self.depth = 0
         self.ancestors = []
         self.descendants = []
+        # activity is:
+        # 0 - active
+        # 1 - ancestor
+        # 2 - descendant
+        self.activity = [False, False, False]
         self.extra_context = kwargs or {}
+
+    def get_absolute_url(self):
+        """Familiar API ..."""
+        return self.url
+
+    def __unicode__(self):
+        return self.title
+
+    def __repr__(self):
+        return '<menuhin.models.MenuNode (%s, %s)>' % (self.unique_id, self.parent_id)
 
 class AncestryCalculator(object):
     __slots__ = ()
 
-    def __call__(self, this_node, other_nodes):
+    def __call__(self, this_node, other_nodes, **kwargs):
         ancestors = []
         parent = this_node.unique_id
         while parent is not None:
@@ -75,7 +92,7 @@ class AncestryCalculator(object):
 class DescendantCalculator(object):
     __slots__ = ()
 
-    def __call__(self, this_node, other_nodes):
+    def __call__(self, this_node, other_nodes, **kwargs):
         this_node.descendants = this_node.ancestors[::-1]
         return this_node
 
@@ -86,15 +103,45 @@ class DepthCalculator(object):
     def __init__(self, start=0):
         self.start = start
 
-    def __call__(self, this_node, other_nodes):
+    def __call__(self, this_node, other_nodes, **kwargs):
         this_node.depth = len(this_node.ancestors) + self.start
         return this_node
+
+
+class ActiveCalculator(object):
+    __slots__ = ('compare_querystrings',)
+
+    def __init__(self, compare_querystrings=True):
+        self.compare_querystrings = True
+
+    def __call__(self, this_node, other_nodes, request, **kwargs):
+        req_url = request.get_full_path()
+        node_url = this_node.url
+        if self.compare_querystrings:
+            split_req_url = urlparse(req_url)
+            split_node_url = urlparse(node_url)
+            # the querys should be the same, in any order, hopefully
+            node_query = QueryDict(split_node_url.query)
+            req_query = QueryDict(split_req_url.query)
+
+            is_active = (split_req_url.path == split_node_url.path
+                         and node_query == req_query)
+        else:
+            is_active = req_url == node_url
+        if is_active and not this_node.activity[0]:
+            this_node.activity[0] = is_active
+            # highlight any ancestors
+            for node in this_node.ancestors:
+                node.activity[1] = True
+        return this_node
+
 
 class MenuCollection(object):
     processors = [
         AncestryCalculator(),
         DescendantCalculator(),
         DepthCalculator(),
+        ActiveCalculator(compare_querystrings=True),
     ]
     name = None
     verbose_name = None
@@ -149,7 +196,7 @@ class MenuCollection(object):
         self.tree = None
         self.menu = self.get_or_create()
 
-    def build(self):
+    def build(self, request=None):
         # Try and get data from cache
         result_from_cache = self.nodes_from_cache()
         self.nodes = result_from_cache
@@ -189,7 +236,9 @@ class MenuCollection(object):
             start = datetime.now()
             for node in self.nodes:
                 for processor in self.processors:
-                    node = processor(node, self.tree)
+                    node = processor(this_node=node,
+                                     other_nodes=self.tree,
+                                     request=request)
             end = datetime.now()
             duration3 = (end - start)
             logging_parts = (duration3.microseconds, duration3.seconds)
@@ -224,7 +273,7 @@ class RealTimeMenuCollection(MenuCollection):
 
 class MenuHandler(object):
     __slots__ = ('menus', )
-    
+
     def __init__(self):
         self.menus = {}
 

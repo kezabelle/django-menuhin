@@ -1,10 +1,25 @@
 {% load menu_helpers %}
-<ul class="menu">
+<ol>
 {% for node in nodes %}
     {% ifdepthlt node nodes %}</ul></li>{% endifdepthlt %}
     {% ifdepthgt node nodes %}<ul class="menu_depth_{{ node.depth }}">{% endifdepthgt %}
 
-    <li id="{{ node.unique_id }}"><a href="{{ node.url }}">{{ node.title }}</a>
     {% ifchanged %}{% else %}</li>{% endifchanged %}
+    <li id="{{ node.unique_id }}" class="
+    {% if node.activity.0 %}selected{% endif %}
+    {% if node.activity.1 %}ancestor{% endif %}
+    {% if node.activity.2 %}descendant{% endif %}
+    {% if not node.activity.0 and not node.activity.1 and not node.activity.2 %}
+    norelationship
+    {% endif %}
+    ">
+    <a href="{{ node.url }}">{{ node.title }}</a> ({{ node.depth }})
 {% endfor %}
-</ul>
+
+</ol>
+
+<select>
+    {% for node in nodes %}
+        <option>{% for x in ""|ljust:node.depth %}&mdash;&mdash;{% endfor %}{{ node.title }}</option>
+    {% endfor %}
+</select>

@@ -1,26 +1,44 @@
 # -*- coding: utf-8 -*-
+from copy import copy
 from classytags.core import Tag, Options
 from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
 from django import template
+import itertools
 from menuhin.utils import get_menu, get_all_menus
 
 register = template.Library()
 
+
+
 class ShowMenu(InclusionTag):
     template = 'menuhin/none.html'
     options = Options(
-        Argument('title', required=False, resolve=True, default=None),
+        Argument('title', required=True, resolve=True, default=None),
+        Argument('from_depth', required=False, resolve=True, default=0),
+        Argument('to_depth', required=False, resolve=True, default=100),
     )
 
-    def get_context(self, context, title):
-        menu = get_menu(title)
+    def get_context(self, context, title, from_depth, to_depth, **kwargs):
+        request = None
+        if 'request' in context:
+            request = copy(context['request'])
+            request.path = '/weblog/2013/jan/a-temporary-addition-to-the-office/'
+        menu = get_menu(key=title, request=request)
+
+        def filter_depths(input):
+            return input.depth >= from_depth and input.depth <= to_depth
+
+        nodes = itertools.ifilter(filter_depths, menu.nodes)
+
         return {
-            'nodes': menu.nodes,
+            'nodes': list(nodes),
             'menu': menu,
+            'from_depth': from_depth,
+            'to_depth': to_depth,
         }
 
-    def get_template(self, context, title):
+    def get_template(self, context, title, **kwargs):
         return [
             'menuhin/show_menu/%s/default.html' % title,
             'menuhin/show_menu/default.html',
