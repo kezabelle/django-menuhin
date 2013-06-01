@@ -115,7 +115,12 @@ class ActiveCalculator(object):
         self.compare_querystrings = True
 
     def __call__(self, this_node, other_nodes, request, **kwargs):
-        req_url = request.get_full_path()
+        try:
+            req_url = request.get_full_path()
+        except AttributeError as e:
+            # request was None, so stop processing ...
+            return this_node
+
         node_url = this_node.url
         if self.compare_querystrings:
             split_req_url = urlparse(req_url)
