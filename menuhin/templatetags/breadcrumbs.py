@@ -58,10 +58,11 @@ class ShowBreadcrumbsForUrl(InclusionTag):
             items = get_all_menus(request=request)
             items = chain.from_iterable([x.nodes for x in items.values()])
 
-        def filter_only_active(input):
-            return input.activity[0] is True
+        try:
+            first_active_node = (x for x in items if x.activity[0] is True).next()
+        except StopIteration as e:
+            first_active_node = None
 
-        first_active_node = itertools.ifilter(filter_only_active, items).next()
         # takes a copy of the node, so that there's not a potentially infinite
         # number of ancestors and descendants, I think?
         finalised_data = {
