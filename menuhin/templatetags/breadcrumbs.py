@@ -8,6 +8,7 @@ from classytags.core import Options
 from classytags.arguments import Argument, KeywordArgument
 from classytags.helpers import InclusionTag
 from django import template
+import itertools
 from menuhin.utils import get_all_menus, get_menu
 
 register = template.Library()
@@ -25,12 +26,14 @@ class ShowBreadcrumbsForUrl(InclusionTag):
         if 'request' not in context:
             logger.warning('request not in Context')
             return {}
+        request = context['request']
+
         if menu:
             logger.debug('finding breadcrumbs for %s only' % menu)
-            items = get_menu(menu).nodes
+            items = get_menu(menu, request=request).nodes
         else:
             logger.debug('finding breadcrumbs using all menus' % menu)
-            items = get_all_menus()
+            items = get_all_menus(request=request)
             items = chain.from_iterable([x.nodes for x in items.values()])
 
         try:
@@ -40,31 +43,25 @@ class ShowBreadcrumbsForUrl(InclusionTag):
             # Now we're assuming it's a string or something we can actually use.
             url = thing_to_lookup
 
-        def maybe_url_match(current_item):
-            """ Relies on the parent context. Ugh. """
-            if url in current_item.url:
-                if len(current_item.url) <= url:
-                    return True
-            return False
-
         start = datetime.now()
 
-        found_items = ifilter(maybe_url_match, items)
-        found_and_sorted = sorted(found_items, key=attrgetter('url'))
+        def filter_only_active(input):
+            return input.activity[0] is True
+
         try:
-            longest_match = found_and_sorted[0]
-            other_matches = found_and_sorted[1:]
-        except IndexError:
-            longest_match = None
-            other_matches = None
+            first_active_node = itertools.ifilter(filter_only_active, items).next()
+        except:
+            # Can't remember what I needed to catch :\
+            first_active_node = None
 
         end = datetime.now()
         duration1 = (end - start)
         logging_parts = (duration1.microseconds, duration1.seconds)
-        logger.debug('filtering and sorting breadcrumbs took %d microseconds (%d seconds)' % logging_parts)
+        logger.debug('filtering breadcrumbs took %d microseconds (%d seconds)' % logging_parts)
+
         return {
-            'node': longest_match,
-            'possibly_related': other_matches,
+            'node': first_active_node,
+            'menu': menu,
         }
 
     def get_template(self, context, thing_to_lookup, menu):
