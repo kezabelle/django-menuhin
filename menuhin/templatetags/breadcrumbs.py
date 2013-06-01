@@ -22,6 +22,9 @@ class ShowBreadcrumbsForUrl(InclusionTag):
     )
 
     def get_context(self, context, thing_to_lookup, menu):
+        if 'request' not in context:
+            logger.warning('request not in Context')
+            return {}
         if menu:
             logger.debug('finding breadcrumbs for %s only' % menu)
             items = get_menu(menu).nodes
