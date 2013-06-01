@@ -1,5 +1,5 @@
 {% load menu_helpers %}
-<ol>
+<ol class="{{ is_submenu|yesno:"submenu,menu" }} {% if menu %}menu--{{ menu }}{% endif %} {% if from_depth %}menu--fromdepth--{{ from_depth }}{% endif %} {% if to_depth %}menu--todepth--{{ to_depth }}{% endif %}">
 {% for node in nodes %}
     {% ifdepthlt node nodes %}</ul></li>{% endifdepthlt %}
     {% ifdepthgt node nodes %}<ul class="menu_depth_{{ node.depth }}">{% endifdepthgt %}
