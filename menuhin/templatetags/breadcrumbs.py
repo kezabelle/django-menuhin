@@ -12,6 +12,7 @@ from classytags.helpers import InclusionTag
 from django import template
 import itertools
 from django.core.cache import cache
+from django.core.validators import validate_slug
 from menuhin.utils import get_all_menus, get_menu
 
 register = template.Library()
@@ -48,10 +49,13 @@ class ShowBreadcrumbsForUrl(InclusionTag):
         request = context['request']
 
         if menu:
+            # make sure we haven't been dumb as hammers by validating this title
+            # is something we could actually be storing.
+            validate_slug(menu)
             logger.debug('finding breadcrumbs for %s only' % menu)
             items = get_menu(menu, request=request).nodes
         else:
-            logger.debug('finding breadcrumbs using all menus' % menu)
+            logger.debug('finding breadcrumbs using all menus')
             items = get_all_menus(request=request)
             items = chain.from_iterable([x.nodes for x in items.values()])
 

@@ -5,6 +5,7 @@ from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
 from django import template
 import itertools
+from django.core.validators import validate_slug
 from menuhin.utils import get_menu, get_all_menus
 
 register = template.Library()
@@ -20,10 +21,14 @@ class ShowMenu(InclusionTag):
     )
 
     def get_context(self, context, title, from_depth, to_depth, **kwargs):
+        # make sure we haven't been dumb as hammers by validating this title
+        # is something we could actually be storing.
+        validate_slug(title)
+
         request = None
         if 'request' in context:
-            request = copy(context['request'])
-            request.path = '/weblog/2013/jan/a-temporary-addition-to-the-office/'
+            request = context['request']
+            # request.path = '/weblog/2013/jan/a-temporary-addition-to-the-office/'
         menu = get_menu(key=title, request=request)
 
         def filter_depths(input):
