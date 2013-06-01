@@ -51,7 +51,6 @@ class ShowBreadcrumbsForUrl(InclusionTag):
         if menu:
             # make sure we haven't been dumb as hammers by validating this title
             # is something we could actually be storing.
-            validate_slug(menu)
             logger.debug('finding breadcrumbs for %s only' % menu)
             items = get_menu(menu, request=request).nodes
         else:
