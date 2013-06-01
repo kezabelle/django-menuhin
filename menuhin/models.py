@@ -72,7 +72,11 @@ class MenuNode(object):
         return self.title
 
     def __repr__(self):
-        return '<menuhin.models.MenuNode (%s, %s)>' % (self.unique_id, self.parent_id)
+        data = {'id': self.unique_id, 'parent': self.parent_id,
+                'title': self.title, 'level': self.depth}
+        repr = ('<menuhin.models.MenuNode: %(level)d (%(id)s, %(parent)s, '
+                '"%(title)s")>')
+        return repr % data
 
 class AncestryCalculator(object):
     __slots__ = ()
