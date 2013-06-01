@@ -200,8 +200,10 @@ class MenuCollection(object):
             menu = Menu.objects.get(title=name)
         except Menu.DoesNotExist:
             logger.info('Menu not found in database, creating "%s" now' % name)
-            menu = Menu.objects.create(title=name,
+            menu = Menu(title=name,
                 display_title=self.get_verbose_name())
+            menu.full_clean()
+            menu.save()
         return menu
 
     def __init__(self):
