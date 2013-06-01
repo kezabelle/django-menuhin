@@ -1,25 +1,17 @@
 {% load menu_helpers %}
-<ol class="{{ is_submenu|yesno:"submenu,menu" }} {% if menu %}menu--{{ menu }}{% endif %} {% if from_depth %}menu--fromdepth--{{ from_depth }}{% endif %} {% if to_depth %}menu--todepth--{{ to_depth }}{% endif %}">
+
 {% for node in nodes %}
-    {% ifdepthlt node nodes %}</ul></li>{% endifdepthlt %}
-    {% ifdepthgt node nodes %}<ul class="menu_depth_{{ node.depth }}">{% endifdepthgt %}
-
-    {% ifchanged %}{% else %}</li>{% endifchanged %}
-    <li id="{{ node.unique_id }}" class="
-    {% if node.activity.0 %}selected{% endif %}
-    {% if node.activity.1 %}ancestor{% endif %}
-    {% if node.activity.2 %}descendant{% endif %}
-    {% if not node.activity.0 and not node.activity.1 and not node.activity.2 %}
-    norelationship
+    {% if forloop.first  %}
+    <ol class="{{ is_submenu|yesno:"submenu,menu" }} {% if menu.title %}menu--{{ menu.title }}{% endif %} {% if from_depth %}menu--fromdepth--{{ from_depth }}{% endif %} {% if to_depth %}menu--todepth--{{ to_depth }}{% endif %}">
     {% endif %}
-    ">
-    <a href="{{ node.url }}">{{ node.title }}</a> ({{ node.depth }})
+
+    {% depth node 'nodes' %}
+    {% deeper %}
+    <ol class="menu--currentdepth--{{ node.depth }}">
+    {% less %}
+    </ol></li>
+    {% enddepth %}
+    <li><a href="{{ node.url }}">{{ node.title }}</a>
+
+    {% if forloop.last %}</ol>{% endif %}
 {% endfor %}
-
-</ol>
-
-<select>
-    {% for node in nodes %}
-        <option>{% for x in ""|ljust:node.depth %}&mdash;&mdash;{% endfor %}{{ node.title }}</option>
-    {% endfor %}
-</select>
