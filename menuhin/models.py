@@ -85,7 +85,7 @@ class AncestryCalculator(object):
             ancestors.append(next_parent)
             parent = next_parent.parent_id
 
-        this_node.ancestors = ancestors
+        this_node.ancestors = ancestors[::-1]
         return this_node
 
 
