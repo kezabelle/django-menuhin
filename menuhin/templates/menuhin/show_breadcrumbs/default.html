@@ -1,10 +1,12 @@
 {% if node.ancestors %}
-<ul>
+<ol class="breadcrumbs">
     {% for ancestor in node.ancestors %}
-        <li>
-        {% if not forloop.first %}&raquo;{% endif %}
-        <a href="{{ ancestor.url }}">{{ ancestor.title }}</a>
+        <li class="breadcrumbs__ancestor">
+        {% if not forloop.first %}/{% endif %}
+        <a href="{{ ancestor.url }}" class="breadcrumbs__ancestor__link">
+            {{ ancestor.title }}
+        </a>
         </li>
     {% endfor %}
-</ul>
+</ol>
 {% endif %}
