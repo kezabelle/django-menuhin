@@ -160,21 +160,25 @@ class MenuCollection(object):
     def get_menu_key(self):
         return self.name
 
-    def nodes_from_cache(self):
-        key = NODE_CACHE_KEY_PREFIX % self.get_name()
-        return cache.get(key, None)
+    def get_nodes(self, *args, **kwargs):
+        raise NotImplementedError('Subclasses should provide this implementation')
 
-    def nodes_to_cache(self, nodelist):
-        key = NODE_CACHE_KEY_PREFIX % self.get_name()
-        return cache.set(key, nodelist)
-
-    def tree_from_cache(self):
-        key = TREE_CACHE_KEY_PREFIX % self.get_name()
-        return cache.get(key, None)
-
-    def tree_to_cache(self, nodelist):
-        key = TREE_CACHE_KEY_PREFIX % self.get_name()
-        return cache.set(key, nodelist)
+    #
+    # def nodes_from_cache(self):
+    #     key = NODE_CACHE_KEY_PREFIX % self.get_name()
+    #     return cache.get(key, None)
+    #
+    # def nodes_to_cache(self, nodelist):
+    #     key = NODE_CACHE_KEY_PREFIX % self.get_name()
+    #     return cache.set(key, nodelist)
+    #
+    # def tree_from_cache(self):
+    #     key = TREE_CACHE_KEY_PREFIX % self.get_name()
+    #     return cache.get(key, None)
+    #
+    # def tree_to_cache(self, nodelist):
+    #     key = TREE_CACHE_KEY_PREFIX % self.get_name()
+    #     return cache.set(key, nodelist)
 
     def get_or_create(self, *args, **kwargs):
         """
@@ -201,79 +205,39 @@ class MenuCollection(object):
         self.tree = None
         self.menu = self.get_or_create()
 
-    def build(self, request=None):
-        # Try and get data from cache
-        result_from_cache = self.nodes_from_cache()
-        self.nodes = result_from_cache
-        if result_from_cache is None:
-            logger.info('Cache missed for nodes, getting from %r' % self.__class__)
-            start = datetime.now()
-            # may be a generator or something, and to do the node processing we
-            # need it to be a fixed data structure.
-            self.nodes = list(self.get_nodes())
-            end = datetime.now()
-            duration1 = (end - start)
-            logging_parts = (duration1.microseconds, duration1.seconds)
-            logger.debug('getting nodes took %d microseconds (%d seconds)' % logging_parts)
-
+    def build_tree(self):
         # internal nodes representation!
         # basically:
         # {
         #   'unique_id': node,
         #   'unique_id': node,
         # }
-        result_from_cache = self.tree_from_cache()
-        self.tree = result_from_cache or {}
-        if result_from_cache is None:
-            logger.info('Cache missed for tree, getting from %r' % self.__class__)
-            start = datetime.now()
-            for element in self.nodes:
-                self.tree[element.unique_id] = element
-            end = datetime.now()
-            duration2 = (end - start)
-            logging_parts = (duration2.microseconds, duration2.seconds)
-            logger.debug('Building tree took %s microseconds (%d seconds)' % logging_parts)
+        self.tree = {}
+        for element in self.nodes:
+            self.tree[element.unique_id] = element
+        return self
 
+    def build_nodes(self):
+        self.nodes = list(self.get_nodes())
+        return self
+
+    def apply_processors(self):
         # process nodes
         # This might be expensive, so use sparingly.
         if self.processors:
-            logger.debug('%d processors to apply to each node' % len(self.processors))
-            start = datetime.now()
             for node in self.nodes:
                 for processor in self.processors:
                     node = processor(this_node=node,
                                      other_nodes=self.tree,
-                                     request=request)
-            end = datetime.now()
-            duration3 = (end - start)
-            logging_parts = (duration3.microseconds, duration3.seconds)
-            logger.debug('Processing nodes took %s microseconds (%d seconds)' % logging_parts)
+                                     request=self.request)
+        return self
 
-#        self.nodes = self.tree.values()
-        # put data back into the cache now we have it all.
-        self.nodes_to_cache(self.nodes)
-        self.tree_to_cache(self.tree)
+    def build(self, request=None):
+        self.request = request
+        self.build_nodes().build_tree().apply_processors()
+        return self
 
-class RealTimeMenuCollection(MenuCollection):
-    """
-    If for some reason, you need to avoid the cache, you can use this. Yay!
-    (Don't use this!)
-    """
-    def nodes_from_cache(self):
-        """ Never looks in the cache """
-        return None
 
-    def nodes_to_cache(self, nodelist):
-        """ Never caches anything """
-        return None
-
-    def tree_from_cache(self):
-        """ Never looks in the cache """
-        return None
-
-    def tree_to_cache(self, nodelist):
-        """ Never caches anything """
-        return None
 
 
 class MenuHandler(object):
