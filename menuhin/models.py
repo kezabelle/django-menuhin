@@ -97,7 +97,11 @@ class DescendantCalculator(object):
     __slots__ = ()
 
     def __call__(self, this_node, other_nodes, **kwargs):
-        this_node.descendants = this_node.ancestors[::-1]
+        # we should already have ancestors as a sorted list, so we can just
+        # apply descendants in order?
+        ancestors = []
+        for node in this_node.ancestors:
+            node.descendants.append(this_node)
         return this_node
 
 
