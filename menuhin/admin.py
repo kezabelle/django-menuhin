@@ -2,8 +2,21 @@
 from copy import deepcopy
 from django.contrib import admin
 from helpfulfields.admin import changetracking_fieldset, changetracking_readonlys
-from menuhin.models import Menu, menu_handlers
+from menuhin.models import Menu, menu_handlers, CustomMenuLabel, CustomMenuItem
 from menuhin.text import config_fieldset_label
+
+
+class CustomLabelInline(admin.StackedInline):
+    model = CustomMenuLabel
+    extra = 0
+    fields = ('title', 'target_id', 'is_published')
+
+
+class CustomMenuItemInline(admin.StackedInline):
+    model = CustomMenuItem
+    extra = 0
+    fields = ('title', 'url', ('position', 'parent_id'), 'is_published')
+
 
 class MenuAdmin(admin.ModelAdmin):
     list_display = [
@@ -41,6 +54,10 @@ class MenuAdmin(admin.ModelAdmin):
             ]
         }]
     ]
+    inlines = (
+        CustomMenuItemInline,
+        CustomLabelInline,
+    )
     readonly_fields = changetracking_readonlys
 
     def __init__(self, *args, **kwargs):

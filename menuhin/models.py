@@ -9,12 +9,14 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import SlugField, ForeignKey, CharField
 from django.http import QueryDict
 from django.utils.importlib import import_module
+from model_utils import Choices
 from model_utils.managers import PassThroughManager
 from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.settings import MENUHIN_MENU_HANDLERS, NODE_CACHE_KEY_PREFIX, TREE_CACHE_KEY_PREFIX
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help)
-from menuhin.querysets import MenuQuerySet
+from menuhin.querysets import (MenuQuerySet, CustomMenuLabelQuerySet,
+                               CustomMenuItemQuerySet)
 
 # see the following URLs:
 # http://bobobobo.wordpress.com/2010/12/22/closure-table-part-deux-nodes-and-adjacencies-a-tree-in-mysql/
@@ -41,6 +43,23 @@ class Menu(ChangeTracking, Publishing):
     class Meta:
         verbose_name = menu_v
         verbose_name_plural = menu_vp
+
+
+class CustomMenuLabel(ChangeTracking, Publishing):
+    menu = ForeignKey(Menu)
+    title = CharField(max_length=100, verbose_name=display_title_label)
+    target_id = CharField(max_length=100)
+    objects = PassThroughManager.for_queryset_class(CustomMenuLabelQuerySet)()
+
+
+class CustomMenuItem(ChangeTracking, Publishing):
+    menu = ForeignKey(Menu)
+    POSITIONS = Choices('above', 'below')
+    position = CharField(choices=POSITIONS, default=POSITIONS.above, max_length=5)
+    title = CharField(max_length=100, verbose_name=display_title_label)
+    url = CharField(max_length=2048)
+    parent_id = CharField(max_length=100)
+    objects = PassThroughManager.for_queryset_class(CustomMenuItemQuerySet)()
 
 
 class MenuNode(object):
