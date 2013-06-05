@@ -64,7 +64,7 @@ class CustomMenuItem(ChangeTracking, Publishing):
 
 class MenuNode(object):
     __slots__ = ('title', 'url', 'unique_id', 'parent_id',
-                 'depth', 'ancestors', 'descendants', 'activity', 'extra_context')
+                 'depth', 'ancestors', 'descendants', 'extra_context')
 
     def __init__(self, title, url, unique_id, parent_id=None, **kwargs):
         self.title = title
@@ -76,11 +76,6 @@ class MenuNode(object):
         self.depth = 0
         self.ancestors = []
         self.descendants = []
-        # activity is:
-        # 0 - active
-        # 1 - ancestor
-        # 2 - descendant
-        self.activity = [False, False, False]
         self.extra_context = kwargs or {}
 
     def get_absolute_url(self):
@@ -96,6 +91,30 @@ class MenuNode(object):
         repr = ('<menuhin.models.MenuNode: %(level)d (%(id)s, %(parent)s, '
                 '"%(title)s")>')
         return repr % data
+
+    def __nonzero__(self):
+        """
+        Allows for doing "If Node A:" for truthiness
+
+        :return: :data:`True` or :data:`False`
+        """
+        return len(self.title) > 0 and len(self.url) > 0 and len(self.unique_id) > 0
+
+    def __eq__(self, other):
+        return other.unique_id == self.unique_id
+
+    def __ne__(self, other):
+        return other.unique_id != self.unique_id
+
+    def __contains__(self, item):
+        """
+        Allows for doing "Is Node A in Node B?" without being clear about
+        where in the family it is.
+
+        :param item: The item to find in the ancestors or descendants list.
+        :return: :data:`True` or :data:`False`
+        """
+        return item in self.ancestors or item in self.descendants
 
 class AncestryCalculator(object):
     __slots__ = ()
@@ -141,7 +160,7 @@ class ActiveCalculator(object):
     def __init__(self, compare_querystrings=True):
         self.compare_querystrings = True
 
-    def __call__(self, this_node, other_nodes, request, **kwargs):
+    def __call__(self, this_node, request, **kwargs):
         try:
             req_url = request.get_full_path()
         except AttributeError as e:
@@ -160,11 +179,11 @@ class ActiveCalculator(object):
                          and node_query == req_query)
         else:
             is_active = req_url == node_url
-        if is_active and not this_node.activity[0]:
-            this_node.activity[0] = is_active
+        if is_active is True:
+            this_node.extra_context['is_active'] = is_active
             # highlight any ancestors
             for node in this_node.ancestors:
-                node.activity[1] = True
+                node.extra_context['is_ancestor'] = is_active
         return this_node
 
 
@@ -173,7 +192,6 @@ class MenuCollection(object):
         AncestryCalculator(),
         DescendantCalculator(),
         DepthCalculator(),
-        ActiveCalculator(compare_querystrings=True),
     ]
     name = None
     verbose_name = None
@@ -250,21 +268,33 @@ class MenuCollection(object):
         self.nodes = list(self.get_nodes())
         return self
 
-    def apply_processors(self):
+    def apply_safe_processors(self):
         # process nodes
         # This might be expensive, so use sparingly.
         if self.processors:
             for node in self.nodes:
                 for processor in self.processors:
                     node = processor(this_node=node,
-                                     other_nodes=self.tree,
-                                     request=self.request)
+                                     other_nodes=self.tree)
         return self
 
     def build(self, request=None):
-        self.request = request
-        self.build_nodes().build_tree().apply_processors()
+        self.build_nodes().build_tree().apply_safe_processors()
         return self
+
+    def all(self, request):
+        is_active = ActiveCalculator(compare_querystrings=True)
+        return (is_active(this_node=x, request=request) for x in self.nodes)
+
+    def filter_depth(self, request, from_depth, to_depth):
+        return (x for x in self.all(request)
+                if x.depth >= from_depth and x.depth <=to_depth)
+
+    def filter_active(self, request):
+        return (x for x in self.all(request)
+                if 'is_active' in x.extra_context
+                and x.extra_context['is_active'] is True)
+
 
 
 

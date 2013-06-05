@@ -31,7 +31,8 @@ class ShowMenu(InclusionTag):
         def filter_depths(input):
             return input.depth >= from_depth and input.depth <= to_depth
 
-        nodes = itertools.ifilter(filter_depths, menu.nodes)
+        nodes = menu.filter_depth(request=request, from_depth=from_depth,
+                                  to_depth=to_depth)
 
         return {
             'nodes': list(nodes),
@@ -77,11 +78,12 @@ class ShowSubMenu(InclusionTag):
 
         if menu:
             logger.debug('finding matching node for for %s only' % menu)
-            items = get_menu(menu, request=request).nodes
+            items = get_menu(menu, request=request).filter_active(request=request)
         else:
             logger.debug('finding matching node using all menus')
             items = get_all_menus(request=request)
-            items = itertools.chain.from_iterable([x.nodes for x in items.values()])
+            items = itertools.chain.from_iterable([x.filter_active(request=request)
+                                                   for x in items.values()])
 
         try:
             url = url.get_absolute_url()
@@ -92,7 +94,7 @@ class ShowSubMenu(InclusionTag):
 
         # hmmm, this could probably use the active calculator?
         try:
-            first_active_node = (x for x in items if x.url == url).next()
+            first_active_node = items.next()
             max_depth = first_active_node.depth + to_depth
             descendants = (x for x in first_active_node.descendants
                            if x.depth <= max_depth)

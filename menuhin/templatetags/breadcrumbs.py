@@ -49,17 +49,16 @@ class ShowBreadcrumbsForUrl(InclusionTag):
         request = context['request']
 
         if menu:
-            # make sure we haven't been dumb as hammers by validating this title
-            # is something we could actually be storing.
-            logger.debug('finding breadcrumbs for %s only' % menu)
-            items = get_menu(menu, request=request).nodes
+            logger.debug('finding breadcrumbs for for %s only' % menu)
+            items = get_menu(menu, request=request).filter_active(request=request)
         else:
             logger.debug('finding breadcrumbs using all menus')
             items = get_all_menus(request=request)
-            items = chain.from_iterable([x.nodes for x in items.values()])
+            items = itertools.chain.from_iterable([x.filter_active(request=request)
+                                                   for x in items.values()])
 
         try:
-            first_active_node = (x for x in items if x.activity[0] is True).next()
+            first_active_node = items.next()
         except StopIteration as e:
             first_active_node = None
 
