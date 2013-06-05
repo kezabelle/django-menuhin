@@ -242,7 +242,7 @@ class MenuCollection(object):
         except Menu.DoesNotExist:
             logger.info('Menu not found in database, creating "%s" now' % name)
             menu = Menu(title=name,
-                display_title=self.get_verbose_name())
+                        display_title=self.get_verbose_name())
             menu.full_clean()
             menu.save()
         return menu
