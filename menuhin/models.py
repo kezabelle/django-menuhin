@@ -59,13 +59,24 @@ class CustomMenuItem(ChangeTracking, Publishing):
     def unique_id(self):
         return 'custom_menu_item_%s' % self.pk
 
+    def get_attach_menu(self):
+        if self.attach_menu is not None:
+            return self.attach_menu.menus.model_slug(self.attach_menu.title)
+        return None
+
     def to_menunode(self):
-        return MenuNode(
+        yield MenuNode(
             title=self.title,
             url=self.url,
-            unique_id='custom_menu_item_%s' % self.pk,
+            unique_id=self.unique_id,
             parent_id=self.target_id,
         )
+        attached = self.get_attach_menu()
+        if attached is not None:
+            for node in attached.menus.get_nodes(parent_node=self.target_id):
+                yield node
+
+
 
 
 class MenuNode(object):

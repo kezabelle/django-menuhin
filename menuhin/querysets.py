@@ -76,7 +76,6 @@ class MenuFinder(object):
     def get_nodes(self, parent_node=None):
         pk = slugify(self.model._meta.verbose_name)[:50]
         instance = self.model(pk=pk)
-        print pk
         custom_menu_items = dict((x.target_id, x)
                                  for x in instance.menu_items.all())
         changing_nodes = len(custom_menu_items) > 0
@@ -85,15 +84,22 @@ class MenuFinder(object):
             # be done.
             if changing_nodes and node.unique_id in custom_menu_items:
                 obj = custom_menu_items[node.unique_id]
-                newnode = obj.to_menunode()
+                newnodes = obj.to_menunode()
+                # put our new nodes first.
                 if obj.position == obj.POSITIONS.above:
-                    yield newnode
+                    for newnode in newnodes:
+                        yield newnode
                     yield node
+                # put our new nodes last
                 elif obj.position == obj.POSITIONS.below:
                     yield node
-                    yield newnode
+                    for newnode in newnodes:
+                        yield newnode
+                # replace the existing nodes
                 elif obj.position == obj.POSITIONS.replacing:
-                    yield newnode
+                    for newnode in newnodes:
+                        yield newnode
+                # dunno; wtf did you put in the position field?
                 else:
                     yield node
             else:
