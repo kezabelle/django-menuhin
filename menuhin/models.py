@@ -29,6 +29,7 @@ class Menu(ChangeTracking, Publishing):
                               help_text=display_title_help)
 
     objects = PassThroughManager.for_queryset_class(MenuQuerySet)()
+    processors = ()
     menus = MenuFinder()
 
     def __unicode__(self):
