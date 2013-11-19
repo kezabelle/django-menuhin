@@ -220,12 +220,12 @@ class MenuhinBaseTests(DjangoTestCase):
         users, menu, klass = self._building_and_menu(skip=2)
         self.assertEqual(TestMenuChild, klass)
         request = RequestFactory().get('/test/%s' % slugify(unicode(users[5])))
-        wtf2 = list(klass.menus.get_processed_nodes(request=request))
+        fetched_nodes = list(klass.menus.get_processed_nodes(request=request))
         # sanity ...
-        self.assertEqual(len(users), len(wtf2))
+        self.assertEqual(len(users), len(fetched_nodes))
 
         # without the heirarchy calculator, only one thing can be active
-        results = [x.url for x in wtf2
+        results = [x.url for x in fetched_nodes
                    if x.extra_context.get('is_active', False)]
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], request.get_full_path())
@@ -234,14 +234,15 @@ class MenuhinBaseTests(DjangoTestCase):
         users, menu, klass = self._building_and_menu(skip=3)
         self.assertEqual(TestMenuGrandChild, klass)
         request = RequestFactory().get('/')
-        wtf2 = list(klass.menus.get_processed_nodes(request=request))
+        fetched_nodes = list(klass.menus.get_processed_nodes(request=request))
         # sanity ...
-        self.assertEqual(len(users), len(wtf2))
+        self.assertEqual(len(users), len(fetched_nodes))
         # depth from beginning should be the same ...
-        for offset, node in enumerate(wtf2, start=klass.processors[0].start):
+        for offset, node in enumerate(fetched_nodes,
+                                      start=klass.processors[0].start):
             self.assertEqual(offset, node.depth)
 
-        first = wtf2[0]
+        first = fetched_nodes[0]
         # no ancestors.
         self.assertEqual(0, len(first.ancestors))
         self.assertEqual([], first.ancestors)
@@ -251,7 +252,7 @@ class MenuhinBaseTests(DjangoTestCase):
                              if x != first]
         self.assertEqual(first.descendants, first_descendants)
 
-        last = wtf2[-1]
+        last = fetched_nodes[-1]
         # no descendants.
         self.assertEqual(0, len(last.descendants))
         self.assertEqual([], last.descendants)
@@ -267,23 +268,23 @@ class MenuhinBaseTests(DjangoTestCase):
         user_offset = 7
         url = '/test/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
-        wtf2 = list(klass.menus.get_processed_nodes(request=request))
+        fetched_nodes = list(klass.menus.get_processed_nodes(request=request))
         # sanity ...
-        self.assertEqual(len(users), len(wtf2))
+        self.assertEqual(len(users), len(fetched_nodes))
 
-        active_urls = [x.url for x in wtf2
+        active_urls = [x.url for x in fetched_nodes
                        if x.extra_context.get('is_active', False)]
         self.assertEqual(1, len(active_urls))
         self.assertEqual(active_urls[0], url)
 
-        ancestor_urls = [x.url for x in wtf2
+        ancestor_urls = [x.url for x in fetched_nodes
                          if x.extra_context.get('is_ancestor', False)]
         expected_urls = ['/test/%s' % slugify(unicode(x))
                          for x in users[:user_offset]]
         self.assertEqual(user_offset, len(ancestor_urls))
         self.assertEqual(ancestor_urls, expected_urls)
 
-        ancestor_objs = [x for x in wtf2
+        ancestor_objs = [x for x in fetched_nodes
                          if x.extra_context.get('is_ancestor', False)]
         expected_objs = [MenuNode(title=unicode(x),
                                   url='/test/%s' % slugify(unicode(x)),
@@ -298,11 +299,11 @@ class MenuhinBaseTests(DjangoTestCase):
         user_offset = 7
         url = '/test/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
-        wtf2 = list(klass.menus.filter(request=request, min_depth=3))
+        fetched_nodes = list(klass.menus.filter(request=request, min_depth=3))
         # sanity ...
-        self.assertEqual(len(users) - 2, len(wtf2))
+        self.assertEqual(len(users) - 2, len(fetched_nodes))
         # depth from beginning should be the same ...
-        for offset, node in enumerate(wtf2, start=3):
+        for offset, node in enumerate(fetched_nodes, start=3):
             self.assertEqual(offset, node.depth)
 
     def test_depth_max_depth(self):
@@ -311,11 +312,11 @@ class MenuhinBaseTests(DjangoTestCase):
         user_offset = 7
         url = '/test/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
-        wtf2 = list(klass.menus.filter(request=request, max_depth=2))
+        fetched_nodes = list(klass.menus.filter(request=request, max_depth=2))
         # sanity ...
-        self.assertEqual(2, len(wtf2))
+        self.assertEqual(2, len(fetched_nodes))
         # depth from beginning should be the same ...
-        for offset, node in enumerate(wtf2, start=1):
+        for offset, node in enumerate(fetched_nodes, start=1):
             self.assertEqual(offset, node.depth)
 
     def test_depth_bad_min_max_depth(self):
@@ -324,10 +325,10 @@ class MenuhinBaseTests(DjangoTestCase):
         user_offset = 7
         url = '/test/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
-        wtf2 = list(klass.menus.filter(request=request, min_depth=3,
-                                       max_depth=2))
+        fetched_nodes = list(klass.menus.filter(request=request, min_depth=3,
+                                                max_depth=2))
         # sanity ...
-        self.assertEqual(0, len(wtf2))
+        self.assertEqual(0, len(fetched_nodes))
 
     def test_depth_good_min_max_depth(self):
         users, menu, klass = self._building_and_menu(skip=4)
@@ -335,10 +336,10 @@ class MenuhinBaseTests(DjangoTestCase):
         user_offset = 7
         url = '/test/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
-        wtf2 = list(klass.menus.filter(request=request, min_depth=2,
-                                       max_depth=10))
+        fetched_nodes = list(klass.menus.filter(request=request, min_depth=2,
+                                                max_depth=10))
         # sanity ...
-        self.assertEqual(9, len(wtf2))
+        self.assertEqual(9, len(fetched_nodes))
         # depth from beginning should be the same ...
-        for offset, node in enumerate(wtf2, start=2):
+        for offset, node in enumerate(fetched_nodes, start=2):
             self.assertEqual(offset, node.depth)

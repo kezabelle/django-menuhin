@@ -165,44 +165,6 @@ class MenuNode(object):
         return item in self.ancestors or item in self.descendants
 
 
-class AncestryCalculator(object):
-    __slots__ = ()
-
-    def __call__(self, this_node, other_nodes, request, **kwargs):
-        ancestors = []
-        parent = this_node.unique_id
-        while parent is not None:
-            next_parent = other_nodes[parent]
-            ancestors.append(next_parent)
-            parent = next_parent.parent_id
-
-        this_node.ancestors = ancestors[::-1]
-        return this_node
-
-
-class DescendantCalculator(object):
-    __slots__ = ()
-
-    def __call__(self, this_node, other_nodes, request, **kwargs):
-        # we should already have ancestors as a sorted list, so we can just
-        # apply descendants in order?
-        ancestors = []
-        for node in this_node.ancestors:
-            node.descendants.append(this_node)
-        return this_node
-
-
-class DepthCalculator(object):
-    __slots__ = ('start',)
-
-    def __init__(self, start=0):
-        self.start = start
-
-    def __call__(self, this_node, other_nodes, request, **kwargs):
-        this_node.depth = len(this_node.ancestors) + self.start
-        return this_node
-
-
 class HeirarchyCalculator(object):
     __slots__ = ('start',)
 
@@ -220,6 +182,7 @@ class HeirarchyCalculator(object):
                 ancestors.append(next_parent)
                 parent = next_parent.parent_id
         this_node.ancestors = ancestors[::-1]
+        # get rid of self.
         this_node.ancestors.pop()
 
         this_node.depth = len(this_node.ancestors) + self.start
@@ -228,6 +191,7 @@ class HeirarchyCalculator(object):
             node.descendants.append(this_node)
 
         return this_node
+
 
 class ActiveCalculator(object):
     __slots__ = ('compare_querystrings',)
@@ -260,192 +224,3 @@ class ActiveCalculator(object):
             for node in this_node.ancestors:
                 node.extra_context['is_ancestor'] = is_active
         return this_node
-
-
-class MenuCollection(object):
-    processors = [
-        AncestryCalculator(),
-        DescendantCalculator(),
-        DepthCalculator(),
-    ]
-    name = None
-    verbose_name = None
-
-    def get_name(self):
-        return self.name
-
-    def get_verbose_name(self):
-        return self.verbose_name
-
-    def get_menu_key(self):
-        return self.name
-
-    def get_nodes(self, *args, **kwargs):
-        raise NotImplementedError('Subclasses should provide this implementation')
-
-    #
-    # def nodes_from_cache(self):
-    #     key = NODE_CACHE_KEY_PREFIX % self.get_name()
-    #     return cache.get(key, None)
-    #
-    # def nodes_to_cache(self, nodelist):
-    #     key = NODE_CACHE_KEY_PREFIX % self.get_name()
-    #     return cache.set(key, nodelist)
-    #
-    # def tree_from_cache(self):
-    #     key = TREE_CACHE_KEY_PREFIX % self.get_name()
-    #     return cache.get(key, None)
-    #
-    # def tree_to_cache(self, nodelist):
-    #     key = TREE_CACHE_KEY_PREFIX % self.get_name()
-    #     return cache.set(key, nodelist)
-
-    def get_or_create(self, *args, **kwargs):
-        """
-        Look up a menu by the `name` associated with this MenuCollection;
-        if it doesn't exist, create it.
-        Note that the get() only uses the `name` and not the `verbose_name`
-        so that the displayed name on a live site may be customised.
-        Sort of like a guarnteed fixture.
-
-        :return: Menu object
-        """
-        name = self.get_name()
-        try:
-            logger.debug('Getting menu `{0}` from database'.format(name))
-            menu = Menu.objects.get(title=name)
-        except Menu.DoesNotExist:
-            title = self.get_verbose_name()
-            logger.info('Menu `{name}` not found in database, creating '
-                        '"{title}" now'.format(name=name, title=title))
-            menu = Menu(title=name, display_title=title)
-            menu.full_clean()
-            menu.save()
-        return menu
-
-    def __init__(self):
-        self.nodes = None
-        self.tree = None
-        self.menu = self.get_or_create()
-
-    def build_tree(self):
-        # internal nodes representation!
-        # basically:
-        # {
-        #   'unique_id': node,
-        #   'unique_id': node,
-        # }
-        self.tree = {}
-        for element in self.nodes:
-            self.tree[element.unique_id] = element
-        return self
-
-    def build_nodes(self):
-        self.nodes = list(self.get_nodes())
-        return self
-
-    def apply_safe_processors(self):
-        # process nodes
-        # This might be expensive, so use sparingly.
-        if self.processors:
-            for node in self.nodes:
-                for processor in self.processors:
-                    node = processor(this_node=node,
-                                     other_nodes=self.tree)
-        return self
-
-    def build(self, request=None):
-        self.build_nodes().build_tree().apply_safe_processors()
-        return self
-
-    def all(self, request):
-        is_active = ActiveCalculator(compare_querystrings=True)
-        return (is_active(this_node=x, request=request) for x in self.nodes)
-
-    def filter_depth(self, request, from_depth, to_depth):
-        return (x for x in self.all(request)
-                if x.depth >= from_depth and x.depth <=to_depth)
-
-    def filter_active(self, request):
-        return (x for x in self.all(request)
-                if 'is_active' in x.extra_context
-                and x.extra_context['is_active'] is True)
-
-
-
-
-
-class MenuHandler(object):
-    __slots__ = ('menus', )
-
-    def __init__(self):
-        self.menus = {}
-
-    def _load_menus(self):
-        """
-        Internal only. Copies the way middleware classes are loaded, using a
-        global setting `MENUHIN_MENU_HANDLERS` which defaults to `None`
-
-        :return: True or False
-        :rtype: bool
-        """
-        # fail early.
-        if MENUHIN_MENU_HANDLERS is None:
-            if settings.DEBUG:
-                raise ImproperlyConfigured("MENUHIN_MENU_HANDLERS not found in "
-                "your settings module")
-            return False
-
-        # The following is stolen verbatim from Django's basehandler.
-        # It basically serves to put the classes into a dictionary, letting useful
-        # exception messages occur when stuff goes wrong.
-        for menu_handler_path in MENUHIN_MENU_HANDLERS:
-            try:
-                dot = menu_handler_path.rindex('.')
-            except ValueError:
-                raise ImproperlyConfigured("%s isn't a valid path to a menu handler" % menu_handler_path)
-            handler_module, handler_cls = menu_handler_path[:dot], menu_handler_path[dot+1:]
-            try:
-                mod = import_module(handler_module)
-            except ImportError, e:
-                raise ImproperlyConfigured('Error importing menu handler %s: "%s"' % (handler_module, e))
-            try:
-                final_menu_handler = getattr(mod, handler_cls)
-            except AttributeError:
-                raise ImproperlyConfigured('Menu handler module "%s" does not define a "%s" class' % (handler_module, handler_cls))
-
-            the_menu = final_menu_handler()
-            self.menus[the_menu.get_menu_key()] = the_menu
-        return True
-
-    def load_menus(self):
-        """
-        Public accessor function for populating the available menus.
-
-        :return: This MenuHandler (self)
-        :rtype: object
-        """
-#        cached_menu = cache.get('menuhin_menus', None)
-#        # populate from cache
-#        if cached_menu is not None:
-#            self.menus = cached_menu
-        self._load_menus()
-#        # failed cache, create!
-#        if cached_menu is None:
-#            cache.set('menuhin_menus', self.menus)
-        return self
-
-    def reload_menus(self):
-        """
-        Public API method for clearing the cache and trying again.
-
-        :return: This MenuHandler (self)
-        :rtype: object
-        """
-#        cache.delete('menuhin_menus')
-        self.menus = {}
-        logging.info('reloading all menus in %r' % self)
-        self._load_menus()
-        return self
-
-menu_handlers = MenuHandler()
