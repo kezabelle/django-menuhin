@@ -53,6 +53,9 @@ class MenuFinder(object):
             if slugify(model._meta.verbose_name)[:50] in lookups:
                 yield model
 
+    def model_slug(self, lookup):
+        return list(self.model_slugs((lookup,)))[0]
+
     def get_or_create(self, site=None):
         """
         Creates all of the discovered menus ...
@@ -71,7 +74,30 @@ class MenuFinder(object):
 
 
     def get_nodes(self, parent_node=None):
-        return self.model().get_nodes(parent_node=parent_node)
+        pk = slugify(self.model._meta.verbose_name)[:50]
+        instance = self.model(pk=pk)
+        print pk
+        custom_menu_items = dict((x.target_id, x)
+                                 for x in instance.menu_items.all())
+        changing_nodes = len(custom_menu_items) > 0
+        for node in instance.get_nodes(parent_node=parent_node):
+            # if it's in our custom menu items, yield it how it's supposed to
+            # be done.
+            if changing_nodes and node.unique_id in custom_menu_items:
+                obj = custom_menu_items[node.unique_id]
+                newnode = obj.to_menunode()
+                if obj.position == obj.POSITIONS.above:
+                    yield newnode
+                    yield node
+                elif obj.position == obj.POSITIONS.below:
+                    yield node
+                    yield newnode
+                elif obj.position == obj.POSITIONS.replacing:
+                    yield newnode
+                else:
+                    yield node
+            else:
+                yield node
 
     def get_processed_nodes(self, request, parent_node=None):
         nodes = self.get_nodes(parent_node=parent_node)

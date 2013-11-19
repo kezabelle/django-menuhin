@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import SlugField, ForeignKey, CharField
+from django.utils.functional import cached_property
 from django.contrib.contenttypes.models import ContentType
 from django.http import QueryDict
 from django.utils.importlib import import_module
@@ -50,9 +51,21 @@ class CustomMenuItem(ChangeTracking, Publishing):
     title = CharField(max_length=100, verbose_name=display_title_label)
     url = CharField(max_length=2048)
     # store the parent_id of the menunode to work with.
-    parent_id = CharField(max_length=100)
+    target_id = CharField(max_length=100)
     attach_menu = ForeignKey(Menu, related_name="attached_to", null=True)
     objects = PassThroughManager.for_queryset_class(CustomMenuItemQuerySet)()
+
+    @cached_property
+    def unique_id(self):
+        return 'custom_menu_item_%s' % self.pk
+
+    def to_menunode(self):
+        return MenuNode(
+            title=self.title,
+            url=self.url,
+            unique_id='custom_menu_item_%s' % self.pk,
+            parent_id=self.target_id,
+        )
 
 
 class MenuNode(object):

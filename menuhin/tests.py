@@ -184,7 +184,7 @@ class MenuhinBaseTests(DjangoTestCase):
     def test_calling_via_subclass_menufinder(self):
         menus = Menu.menus.models()
         MenuKlass = next(menus)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             self.assertEqual(list(MenuKlass().get_nodes()),
                              list(MenuKlass.menus.get_nodes()))
 
@@ -352,6 +352,58 @@ class MenuhinBaseTests(DjangoTestCase):
             TestMenuGrandChild, TestMenuSecondChild
         ])
 
+    def test_getting_models_by_slug2(self):
+        with self.assertNumQueries(16):
+            for menu, created in Menu.menus.get_or_create():
+                self.assertTrue(created)
+        result = Menu.menus.model_slug(lookup='test-menu-second-child')
+        self.assertEqual(result, TestMenuSecondChild)
+
+
+class MenuhinCustomItemsTests(DjangoTestCase):
+    def setUp(self):
+        self.maxDiff = None
+        self.users = list(mommy.make('auth.User')
+                          for x in xrange(1, 10))
+        self.menus = list(Menu.menus.get_or_create())
+
+    def test_custom_making(self):
+        custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
+                            title='yay custom!', target_id='user_4',
+                            position='replacing', url='/yay/')
+        self.assertEqual(custom.to_menunode(), MenuNode(
+            title=custom.title,
+            url=custom.url,
+            unique_id='custom_menu_item_%s' % custom.pk,
+            parent_id=custom.target_id,
+        ))
+
+    def test_custom_replacing(self):
+        custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
+                            title='yay custom!', target_id='user_4',
+                            position='replacing', url='/yay/')
+        menu = list(TestMenu.menus.get_nodes())
+        expecting = menu[3]
+        self.assertEqual(expecting, custom.to_menunode())
+        self.assertEqual(9, len(menu))
+
+    def test_custom_before(self):
+        custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
+                            title='yay custom!', target_id='user_4',
+                            position='above', url='/yay/')
+        menu = list(TestMenu.menus.get_nodes())
+        expecting = menu[3]
+        self.assertEqual(expecting, custom.to_menunode())
+        self.assertEqual(10, len(menu))
+
+    def test_custom_after(self):
+        custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
+                            title='yay custom!', target_id='user_4',
+                            position='below', url='/yay/')
+        menu = list(TestMenu.menus.get_nodes())
+        expecting = menu[4]
+        self.assertEqual(expecting, custom.to_menunode())
+        self.assertEqual(10, len(menu))
 
 class MenuhinTemplateTagTests(DjangoTestCase):
     def test_basic_rendering(self):
