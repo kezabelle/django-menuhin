@@ -85,47 +85,26 @@ class MenuFinder(object):
                                 request=request)
             yield node
         del tree, nodes
+
+    def all(self, request, parent_node=None):
+        return self.get_processed_nodes(request, parent_node=None)
+
+    def filter(self, request, parent_node=None, min_depth=None, max_depth=None):
+        nodes = self.get_processed_nodes(request, parent_node=None)
+        # nothing was given ... this is just doing .all()
+        if min_depth is None and max_depth is None:
+            return nodes
+
+        # if only one parameter was given, figure out the correct values.
+        if min_depth is None and max_depth:
+            min_depth = 0
+        elif max_depth is None and min_depth:
+            max_depth = float("inf")
+
+        return (x for x in nodes
+                if x.depth >= min_depth and x.depth <= max_depth)
     #
-    # def build_tree(self):
-    #     """
-    #     internal nodes representation!
-    #     basically:
-    #     {
-    #       'unique_id': node,
-    #       'unique_id': node,
-    #     }
-    #     """
-    #     assert self._meta.managed is False, "Stop trying to call this on " \
-    #                                         "managed models"
-    #     self.tree = {}
-    #     for element in self.nodes:
-    #         self.tree[element.unique_id] = element
-    #     return self
-    #
-    # def build_nodes(self):
-    #     self.nodes = list(self.get_nodes())
-    #     return self
-    #
-    # def apply_safe_processors(self):
-    #     # process nodes
-    #     # This might be expensive, so use sparingly.
-    #     if self.processors:
-    #         for node in self.nodes:
-    #             for processor in self.processors:
-    #                 node = processor(this_node=node,
-    #                                  other_nodes=self.tree)
-    #     return self
-    #
-    # def calculate_tree(self):
-    #     self.tree = {}
-    #     for element in self.nodes:
-    #         self.tree[element.unique_id] = element
-    #     return self
-    #
-    # def build(self, request=None):
-    #     self.build_nodes().build_tree().apply_safe_processors()
-    #     return self
-    #
+
     # def all(self, request):
     #     is_active = ActiveCalculator(compare_querystrings=True)
     #     return (is_active(this_node=x, request=request) for x in self.nodes)

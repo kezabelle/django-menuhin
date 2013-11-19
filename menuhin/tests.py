@@ -291,3 +291,54 @@ class MenuhinBaseTests(DjangoTestCase):
                          for x in users[:user_offset]]
         self.assertEqual(user_offset, len(ancestor_objs))
         self.assertEqual(ancestor_objs, expected_objs)
+
+    def test_depth_min_depth(self):
+        users, menu, klass = self._building_and_menu(skip=4)
+        self.assertEqual(TestMenuSecondChild, klass)
+        user_offset = 7
+        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        request = RequestFactory().get(url)
+        wtf2 = list(klass.menus.filter(request=request, min_depth=3))
+        # sanity ...
+        self.assertEqual(len(users) - 2, len(wtf2))
+        # depth from beginning should be the same ...
+        for offset, node in enumerate(wtf2, start=3):
+            self.assertEqual(offset, node.depth)
+
+    def test_depth_max_depth(self):
+        users, menu, klass = self._building_and_menu(skip=4)
+        self.assertEqual(TestMenuSecondChild, klass)
+        user_offset = 7
+        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        request = RequestFactory().get(url)
+        wtf2 = list(klass.menus.filter(request=request, max_depth=2))
+        # sanity ...
+        self.assertEqual(2, len(wtf2))
+        # depth from beginning should be the same ...
+        for offset, node in enumerate(wtf2, start=1):
+            self.assertEqual(offset, node.depth)
+
+    def test_depth_bad_min_max_depth(self):
+        users, menu, klass = self._building_and_menu(skip=4)
+        self.assertEqual(TestMenuSecondChild, klass)
+        user_offset = 7
+        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        request = RequestFactory().get(url)
+        wtf2 = list(klass.menus.filter(request=request, min_depth=3,
+                                       max_depth=2))
+        # sanity ...
+        self.assertEqual(0, len(wtf2))
+
+    def test_depth_good_min_max_depth(self):
+        users, menu, klass = self._building_and_menu(skip=4)
+        self.assertEqual(TestMenuSecondChild, klass)
+        user_offset = 7
+        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        request = RequestFactory().get(url)
+        wtf2 = list(klass.menus.filter(request=request, min_depth=2,
+                                       max_depth=10))
+        # sanity ...
+        self.assertEqual(9, len(wtf2))
+        # depth from beginning should be the same ...
+        for offset, node in enumerate(wtf2, start=2):
+            self.assertEqual(offset, node.depth)
