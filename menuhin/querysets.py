@@ -108,7 +108,8 @@ class MenuFinder(object):
     def get_processed_nodes(self, request, parent_node=None):
         nodes = self.get_nodes(parent_node=parent_node)
         if not self.model.processors:
-            yield nodes
+            for node in nodes:
+                yield node
 
         # ugh :(
         tree = {}
@@ -137,20 +138,5 @@ class MenuFinder(object):
             min_depth = 0
         elif max_depth is None and min_depth:
             max_depth = float("inf")
-
         return (x for x in nodes
                 if x.depth >= min_depth and x.depth <= max_depth)
-    #
-
-    # def all(self, request):
-    #     is_active = ActiveCalculator(compare_querystrings=True)
-    #     return (is_active(this_node=x, request=request) for x in self.nodes)
-    #
-    # def filter_depth(self, request, from_depth, to_depth):
-    #     return (x for x in self.all(request)
-    #             if x.depth >= from_depth and x.depth <=to_depth)
-    #
-    # def filter_active(self, request):
-    #     return (x for x in self.all(request)
-    #             if 'is_active' in x.extra_context
-    #             and x.extra_context['is_active'])
