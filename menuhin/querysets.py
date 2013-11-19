@@ -48,6 +48,11 @@ class MenuFinder(object):
         for model in self._all_models(model=self.model):
             yield model
 
+    def model_slugs(self, lookups):
+        for model in self.models():
+            if slugify(model._meta.verbose_name)[:50] in lookups:
+                yield model
+
     def get_or_create(self, site=None):
         """
         Creates all of the discovered menus ...

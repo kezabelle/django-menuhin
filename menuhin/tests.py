@@ -10,9 +10,8 @@ from django.test.client import RequestFactory
 from django.contrib.sites.models import Site
 from django.template.defaultfilters import slugify
 from model_mommy import mommy
-from menuhin.models import (Menu, MenuNode, AncestryCalculator,
-                            DescendantCalculator, DepthCalculator,
-                            ActiveCalculator, HeirarchyCalculator)
+from menuhin.models import (Menu, MenuNode, ActiveCalculator,
+                            HeirarchyCalculator)
 
 
 class TestMenu(Menu):
@@ -76,7 +75,7 @@ class TestMenuSecondChild(TestMenu):
 
 class MenuhinBaseTests(DjangoTestCase):
     def setUp(self):
-        self.maxnum = randrange(10, 200)
+        self.maxnum = randrange(10, 30)
 
     def test_creation(self):
         site = Site.objects.all()[0]
@@ -343,3 +342,20 @@ class MenuhinBaseTests(DjangoTestCase):
         # depth from beginning should be the same ...
         for offset, node in enumerate(fetched_nodes, start=2):
             self.assertEqual(offset, node.depth)
+
+    def test_getting_models_by_slug(self):
+        with self.assertNumQueries(16):
+            for menu, created in Menu.menus.get_or_create():
+                self.assertTrue(created)
+        slugs = ('test-menu-grand-child', 'test-menu-second-child')
+        self.assertEqual(list(Menu.menus.model_slugs(lookups=slugs)), [
+            TestMenuGrandChild, TestMenuSecondChild
+        ])
+
+
+class MenuhinTemplateTagTests(DjangoTestCase):
+    def test_basic_rendering(self):
+        # tmpl = Template("""
+        # {% load menus %}
+        # """)
+        pass
