@@ -1,8 +1,7 @@
 {% load menu_helpers %}
-
 {% for node in nodes %}
     {% if forloop.first  %}
-    <ol class="{{ is_submenu|yesno:"submenu,menu" }} {% if menu.title %}menu--{{ menu.title }}{% endif %} {% if from_depth %}menu--fromdepth--{{ from_depth }}{% endif %} {% if to_depth %}menu--todepth--{{ to_depth }}{% endif %}">
+    <ol class="{{ is_submenu|yesno:"submenu,menu" }} {% if menu.title %}menu--{{ menu.title }}{% endif %} menu--fromdepth--{{ from_depth }} menu--todepth--{{ to_depth }}">
     {% endif %}
 
     {% depth node 'nodes' %}
@@ -11,7 +10,7 @@
     {% less %}
     </ol></li>
     {% enddepth %}
-    <li><a href="{{ node.url }}">{{ node.title }}</a>
+    <li{% if node.depth %} class="menu--depth--{{ node.depth }}"{% endif %}><a href="{{ node.url }}">{{ node.title }}</a>
 
     {% if forloop.last %}</ol>{% endif %}
 {% endfor %}

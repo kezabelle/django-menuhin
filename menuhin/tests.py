@@ -8,6 +8,7 @@ from django.utils.functional import lazy
 from django.test import TestCase as DjangoTestCase
 from django.test.client import RequestFactory
 from django.contrib.sites.models import Site
+from django.template import Template, RequestContext
 from django.template.defaultfilters import slugify
 from model_mommy import mommy
 from menuhin.models import (Menu, MenuNode, ActiveCalculator,
@@ -442,8 +443,33 @@ class MenuhinCustomItemsTests(DjangoTestCase):
 
 
 class MenuhinTemplateTagTests(DjangoTestCase):
+    def setUp(self):
+        self.users = list(mommy.make('auth.User')
+                          for x in xrange(1, 10))
+        self.menus = list(Menu.menus.get_or_create())
+
+    def test_loading(self):
+        tmpl = Template("""
+        {% load menus %}
+        """)
+        url = '/'
+        request = RequestFactory().get(url)
+        self.assertEqual('', tmpl.render(RequestContext(request)).strip())
+
     def test_basic_rendering(self):
-        # tmpl = Template("""
-        # {% load menus %}
-        # """)
-        pass
+        tmpl = Template("""
+        {% load menus %}
+        {% show_menu "test-menu" %}
+        """)
+        url = '/'
+        request = RequestFactory().get(url)
+        result = tmpl.render(RequestContext(request))
+        lines = (x.strip() for x in result.strip().split("\n") if x.strip())
+        safe_lines = list(lines)
+        self.assertEqual(safe_lines[0],
+                         '<ol class="menu  menu--fromdepth--0 '
+                         'menu--todepth--100">')
+        self.assertEqual(safe_lines[-1],
+                         '</ol>')
+        remainder = safe_lines[1:-1]
+        self.assertEqual('', result.strip())

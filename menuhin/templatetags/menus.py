@@ -3,15 +3,15 @@ import logging
 from classytags.core import Options
 from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
+from menuhin.models import Menu
 from django import template
 import itertools
 from django.core.validators import validate_slug
-from menuhin.utils import get_menu, get_all_menus
 
 
 register = template.Library()
-
 logger = logging.getLogger(__name__)
+
 
 class ShowMenu(InclusionTag):
     template = 'menuhin/none.html'
@@ -25,18 +25,13 @@ class ShowMenu(InclusionTag):
         request = None
         if 'request' in context:
             request = context['request']
-            # request.path = '/weblog/2013/jan/a-temporary-addition-to-the-office/'
-        menu = get_menu(key=title, request=request)
-
-        def filter_depths(input):
-            return input.depth >= from_depth and input.depth <= to_depth
-
-        nodes = menu.filter_depth(request=request, from_depth=from_depth,
-                                  to_depth=to_depth)
-
+        FoundMenu = Menu.menus.model_slug(title)
+        nodes = FoundMenu.menus.filter(request=request, min_depth=from_depth,
+                                       max_depth=to_depth)
+        final_nodes = list(nodes)
         return {
-            'nodes': list(nodes),
-            'menu': menu,
+            'nodes': final_nodes,
+            'menu': FoundMenu,
             'from_depth': from_depth,
             'to_depth': to_depth,
             'is_submenu': False,
