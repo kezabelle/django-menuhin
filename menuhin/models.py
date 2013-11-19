@@ -212,7 +212,6 @@ class HeirarchyCalculator(object):
     def __call__(self, this_node, other_nodes, request, **kwargs):
         ancestors = []
         parent = this_node.unique_id
-        # import pdb; pdb.set_trace()
         while parent is not None:
             if parent not in other_nodes:
                 parent = None
@@ -221,8 +220,9 @@ class HeirarchyCalculator(object):
                 ancestors.append(next_parent)
                 parent = next_parent.parent_id
         this_node.ancestors = ancestors[::-1]
+        this_node.ancestors.pop()
 
-        # import pdb; pdb.set_trace()
+        this_node.depth = len(this_node.ancestors) + self.start
 
         for node in this_node.ancestors:
             node.descendants.append(this_node)

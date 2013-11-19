@@ -75,14 +75,16 @@ class MenuFinder(object):
 
         # ugh :(
         tree = {}
-        nodes = list(nodes)
-        for element in nodes:
+        nodes_to_use = list(nodes)
+        for element in nodes_to_use:
             tree[element.unique_id] = element
 
-        for node in nodes:
+        for node in nodes_to_use:
             for processor in self.model.processors:
-                yield processor(this_node=node, other_nodes=tree,
+                node = processor(this_node=node, other_nodes=tree,
                                 request=request)
+            yield node
+        del tree, nodes
     #
     # def build_tree(self):
     #     """

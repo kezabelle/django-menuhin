@@ -19,6 +19,7 @@ setup(
     ],
     tests_require=[
         'django-setuptest>=0.1.4',
+        'model-mommy>=1.2',
     ],
     test_suite='setuptest.setuptest.SetupTestSuite',
     zip_safe=False,

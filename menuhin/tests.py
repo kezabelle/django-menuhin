@@ -54,7 +54,7 @@ class TestMenuChild(TestMenu):
 
 class TestMenuGrandChild(TestMenuChild):
     processors = (
-        HeirarchyCalculator(start=1),
+        HeirarchyCalculator(start=15),
         # ActiveCalculator(compare_querystrings=True),
     )
 
@@ -64,6 +64,11 @@ class TestMenuGrandChild(TestMenuChild):
 
 
 class TestMenuSecondChild(TestMenu):
+    processors = (
+        HeirarchyCalculator(start=1),
+        ActiveCalculator(compare_querystrings=True),
+    )
+
     class Meta:
         managed = False
         proxy = True
@@ -216,6 +221,10 @@ class MenuhinBaseTests(DjangoTestCase):
         self.assertEqual(TestMenuChild, klass)
         request = RequestFactory().get('/test/%s' % slugify(unicode(users[5])))
         wtf2 = list(klass.menus.get_processed_nodes(request=request))
+        # sanity ...
+        self.assertEqual(len(users), len(wtf2))
+
+        # without the heirarchy calculator, only one thing can be active
         results = [x.url for x in wtf2
                    if x.extra_context.get('is_active', False)]
         self.assertEqual(len(results), 1)
@@ -225,6 +234,60 @@ class MenuhinBaseTests(DjangoTestCase):
         users, menu, klass = self._building_and_menu(skip=3)
         self.assertEqual(TestMenuGrandChild, klass)
         request = RequestFactory().get('/')
-        # import pdb; pdb.set_trace()
         wtf2 = list(klass.menus.get_processed_nodes(request=request))
-        import pdb; pdb.set_trace()
+        # sanity ...
+        self.assertEqual(len(users), len(wtf2))
+        # depth from beginning should be the same ...
+        for offset, node in enumerate(wtf2, start=klass.processors[0].start):
+            self.assertEqual(offset, node.depth)
+
+        first = wtf2[0]
+        # no ancestors.
+        self.assertEqual(0, len(first.ancestors))
+        self.assertEqual([], first.ancestors)
+
+        # all descendants
+        first_descendants = [x for x in klass.menus.get_nodes()
+                             if x != first]
+        self.assertEqual(first.descendants, first_descendants)
+
+        last = wtf2[-1]
+        # no descendants.
+        self.assertEqual(0, len(last.descendants))
+        self.assertEqual([], last.descendants)
+
+        # all ancestors
+        last_ancestors = [x for x in klass.menus.get_nodes()
+                          if x != last]
+        self.assertEqual(last.ancestors, last_ancestors)
+
+    def test_processors_mark_ancestors_active(self):
+        users, menu, klass = self._building_and_menu(skip=4)
+        self.assertEqual(TestMenuSecondChild, klass)
+        user_offset = 7
+        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        request = RequestFactory().get(url)
+        wtf2 = list(klass.menus.get_processed_nodes(request=request))
+        # sanity ...
+        self.assertEqual(len(users), len(wtf2))
+
+        active_urls = [x.url for x in wtf2
+                       if x.extra_context.get('is_active', False)]
+        self.assertEqual(1, len(active_urls))
+        self.assertEqual(active_urls[0], url)
+
+        ancestor_urls = [x.url for x in wtf2
+                         if x.extra_context.get('is_ancestor', False)]
+        expected_urls = ['/test/%s' % slugify(unicode(x))
+                         for x in users[:user_offset]]
+        self.assertEqual(user_offset, len(ancestor_urls))
+        self.assertEqual(ancestor_urls, expected_urls)
+
+        ancestor_objs = [x for x in wtf2
+                         if x.extra_context.get('is_ancestor', False)]
+        expected_objs = [MenuNode(title=unicode(x),
+                                  url='/test/%s' % slugify(unicode(x)),
+                                  unique_id='user_%s' % x.pk)
+                         for x in users[:user_offset]]
+        self.assertEqual(user_offset, len(ancestor_objs))
+        self.assertEqual(ancestor_objs, expected_objs)
