@@ -434,6 +434,11 @@ class MenuhinCustomItemsTests(DjangoTestCase):
         menu = list(TestMenu.menus.get_nodes())
         extra_nodes = list(custom.to_menunode())
         self.assertEqual(menu[3], extra_nodes[0])
+        self.assertEqual(menu[4], extra_nodes[1])
+        self.assertEqual(len(menu), 10)
+        thirdnodes = list(TestMenuThirdChild.menus.get_nodes())
+        self.assertEqual(len(thirdnodes), 1)
+        self.assertEqual([extra_nodes[1]], thirdnodes)
 
 
 class MenuhinTemplateTagTests(DjangoTestCase):
