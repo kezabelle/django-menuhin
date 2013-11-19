@@ -16,10 +16,12 @@ setup(
     install_requires=[
         'Django>=1.3',
         'django-model-utils>=1.5',
+        'django-classy-tags>=0.4',
     ],
     tests_require=[
         'django-setuptest>=0.1.4',
         'model-mommy>=1.2',
+        'django-pdb>=0.3.2',
     ],
     test_suite='setuptest.setuptest.SetupTestSuite',
     zip_safe=False,
