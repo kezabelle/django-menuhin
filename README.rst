@@ -12,7 +12,7 @@ the template tags, but it's not ready for prime time.
 
 It's rough around the edges, both in API and functionality, but it is
 inherently lazy, and attempts to be efficient where possible - the biggest
-hits to the database are likely from the userland ``get_nodes()``
+hits to the database are hopefully from the userland ``get_nodes()``
 implementations.
 
 What's the idea?
@@ -38,6 +38,17 @@ The idea in brief::
         class Meta:
             proxy = True
 
+    from menuhin.models import CustomMenuItem
+    # the theory runs that this should replace the previous `master`
+    CustomMenuItem.objects.create(title='replacing the masternode',
+                                  url='/newmaster/',
+                                  unique_id='newmasternode',
+                                  position=CustomMenuItem.POSITIONS.replacing,
+                                  target_id='masternode',
+                                  menu_id='my-menu')
+
+    items = list(MyMenu.menus.all())
+
 That's it.
 
 Anything that is a proxy of ``Menu`` is autodiscovered and usable. Individual
@@ -61,3 +72,6 @@ License
 Simplified BSD License (alternatively known as the FreeBSD License, or
 the 2-clause License). See the ``LICENSE`` file in the source
 distribution for a complete copy.
+
+
+.. _Django: https://djangoproject.com/
