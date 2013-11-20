@@ -1,14 +1,21 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+
 
 setup(
     name='django-menuhin',
     version='0.1.0',
     author='Keryn Knight',
     author_email='python-package@kerynknight.com',
+    description="generating menus for Django apps",
+    long_description=open(os.path.join(HERE, 'README.rst')).read(),
     packages=[
         'menuhin',
     ],
@@ -26,10 +33,11 @@ setup(
     test_suite='setuptest.setuptest.SetupTestSuite',
     zip_safe=False,
     keywords='django menu',
+    license="BSD License",
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+        'License :: OSI Approved :: BSD License',
         'Framework :: Django',
         'Natural Language :: English',
         'Environment :: Web Environment',

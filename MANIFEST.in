@@ -1,0 +1,4 @@
+include LICENSE
+include README.rst
+include requirements.txt
+recursive-include menuhin *.html *.png *.gif *.js *.jpg *.jpeg *.svg *.py *.css *.eot *.ttf *.woff
