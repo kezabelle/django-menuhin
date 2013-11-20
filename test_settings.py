@@ -26,3 +26,7 @@ PASSWORD_HASHERS = (
 )
 
 SITE_ID = 1
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.request',
+)

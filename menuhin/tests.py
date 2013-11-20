@@ -653,3 +653,24 @@ class MenuhinTemplateTagTests(DjangoTestCase):
         for line, user in zip(safe_lines, self.users):
             self.assertEqual(line, '%s [/test/%s]' % (unicode(user),
                                                       slugify(unicode(user))))
+
+    def test_plaintext_rendering_as_output(self):
+        """
+        using as an as tag
+        """
+        tmpl = Template("""
+        {% load menus %}
+        {% show_menu "test-menu" 0 100 as m %}
+        {% for item in m.nodes %}
+        {{ item.title }} --- {{ item.get_absolute_url }}
+        {% endfor %}
+        """)
+        url = '/'
+        request = RequestFactory().get(url)
+        result = tmpl.render(RequestContext(request))
+        lines = (x.strip() for x in result.strip().split("\n") if x.strip())
+        safe_lines = list(lines)
+        self.assertEqual(len(self.users), len(safe_lines))
+        for line, user in zip(safe_lines, self.users):
+            self.assertEqual(line, '%s --- /test/%s' % (unicode(user),
+                                                        slugify(unicode(user))))

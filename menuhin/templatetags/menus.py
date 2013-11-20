@@ -13,13 +13,15 @@ register = template.Library()
 logger = logging.getLogger(__name__)
 
 
-class ShowMenu(InclusionTag):
+class ShowMenu(InclusionTag, AsTag):
     template = 'menuhin/none.html'
     options = Options(
         Argument('title', required=True, resolve=True, default=None),
         Argument('from_depth', required=False, resolve=True, default=0),
         Argument('to_depth', required=False, resolve=True, default=100),
         Argument('template', required=False, resolve=True, default=None),
+        'as', Argument('var', required=False, default=None, resolve=False)
+
     )
 
     def get_context(self, context, title, from_depth, to_depth, **kwargs):
@@ -47,15 +49,17 @@ class ShowMenu(InclusionTag):
             'menuhin/show_menu/default.html',
             self.template,
         ]
+
+    def render_tag(self, context, **kwargs):
+        #: this is basically from the core :class:`~classytags.core.Tag`
+        #: implementation but changed to allow us to have different output
+        #: so that using it as an AS tag returns a *list* of nodes.
+        varname = kwargs.get(self.varname_name, None)
+        if varname:
+            context[varname] = self.get_context(context, **kwargs)
+            return ''
+        return super(ShowMenu, self).render_tag(context, **kwargs)
 register.tag(name='show_menu', compile_function=ShowMenu)
-
-
-class GetMenu(AsTag):
-    options = ShowMenu.options
-
-    def get_value(self, *args, **kwargs):
-        return ShowMenu().get_context(*args, **kwargs)
-register.tag(name='get_menu', compile_function=GetMenu)
 
 
 class ShowSubMenu(InclusionTag):
