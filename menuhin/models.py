@@ -14,7 +14,8 @@ from model_utils.managers import PassThroughManager
 from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.settings import MENUHIN_MENU_HANDLERS
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
-                          display_title_label, display_title_help)
+                          display_title_label, display_title_help,
+                          menuitem_v, menuitem_vp)
 from menuhin.querysets import MenuQuerySet, CustomMenuItemQuerySet, MenuFinder
 
 
@@ -44,6 +45,7 @@ class Menu(ChangeTracking, Publishing):
         verbose_name = menu_v
         verbose_name_plural = menu_vp
         unique_together = ('site', 'title')
+        ordering = ('-created', 'title')
 
 
 class CustomMenuItem(ChangeTracking, Publishing):
@@ -79,6 +81,11 @@ class CustomMenuItem(ChangeTracking, Publishing):
             for node in attached.menus.get_nodes(request=request,
                                                  parent_node=self.target_id):
                 yield node
+
+    class Meta:
+        verbose_name = menuitem_v
+        verbose_name_plural = menuitem_vp
+        ordering = ('target_id', 'created')
 
 
 class MenuNode(object):
