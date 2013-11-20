@@ -87,7 +87,7 @@ class DepthHandler(Tag):
         # if context['forloop']['last'] == True:
         #     import pdb; pdb.set_trace()
         #     del context['_previous_node']
-        print current_node.title, ' ... ', result, difference
+        # print current_node.title, ' ... ', result, difference
         return result
 
 register.tag(DepthHandler)
