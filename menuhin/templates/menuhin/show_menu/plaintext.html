@@ -1,0 +1,3 @@
+{% for node in nodes %}
+{% for i in node.depth_from_root %}-{% endfor %} {{ node.title }} [{{ node.url }}]
+{% endfor %}

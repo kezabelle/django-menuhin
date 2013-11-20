@@ -17,7 +17,7 @@ class MenuFinder(object):
         self.model = owner
         return self
 
-    def _all_models_oldstyle(self, model):
+    def _all_models_oldstyle(self, model):  # pragma: no cover
         """
         Discovery of menus via unmanaged models
         """
@@ -72,19 +72,19 @@ class MenuFinder(object):
                                    if v)
             yield self.model.objects.get_or_create(**fixed_arguments)
 
-
-    def get_nodes(self, parent_node=None):
+    def get_nodes(self, request, parent_node=None):
         pk = slugify(self.model._meta.verbose_name)[:50]
         instance = self.model(pk=pk)
         custom_menu_items = dict((x.target_id, x)
                                  for x in instance.menu_items.all())
         changing_nodes = len(custom_menu_items) > 0
-        for node in instance.get_nodes(parent_node=parent_node):
+        for node in instance.get_nodes(request=request,
+                                       parent_node=parent_node):
             # if it's in our custom menu items, yield it how it's supposed to
             # be done.
             if changing_nodes and node.unique_id in custom_menu_items:
                 obj = custom_menu_items[node.unique_id]
-                newnodes = obj.to_menunode()
+                newnodes = obj.to_menunode(request)
                 # put our new nodes first.
                 if obj.position == obj.POSITIONS.above:
                     for newnode in newnodes:
@@ -100,13 +100,13 @@ class MenuFinder(object):
                     for newnode in newnodes:
                         yield newnode
                 # dunno; wtf did you put in the position field?
-                else:
+                else:  # pragma: no cover
                     yield node
             else:
                 yield node
 
     def get_processed_nodes(self, request, parent_node=None):
-        nodes = self.get_nodes(parent_node=parent_node)
+        nodes = self.get_nodes(request=request, parent_node=parent_node)
         if not self.model.processors:
             for node in nodes:
                 yield node
@@ -120,14 +120,15 @@ class MenuFinder(object):
         for node in nodes_to_use:
             for processor in self.model.processors:
                 node = processor(this_node=node, other_nodes=tree,
-                                request=request)
+                                 request=request)
             yield node
         del tree, nodes
 
     def all(self, request, parent_node=None):
         return self.get_processed_nodes(request, parent_node=None)
 
-    def filter(self, request, parent_node=None, min_depth=None, max_depth=None):
+    def filter(self, request, parent_node=None, min_depth=None,
+               max_depth=None):
         nodes = self.get_processed_nodes(request, parent_node=None)
         # nothing was given ... this is just doing .all()
         if min_depth is None and max_depth is None:

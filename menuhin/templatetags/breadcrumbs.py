@@ -16,8 +16,8 @@ from django.core.validators import validate_slug
 from menuhin.utils import get_all_menus, get_menu
 
 register = template.Library()
-
 logger = logging.getLogger(__name__)
+
 
 class ShowBreadcrumbsForUrl(InclusionTag):
     template = 'menuhin/none.html'

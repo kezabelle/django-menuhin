@@ -19,6 +19,7 @@ class ShowMenu(InclusionTag):
         Argument('title', required=True, resolve=True, default=None),
         Argument('from_depth', required=False, resolve=True, default=0),
         Argument('to_depth', required=False, resolve=True, default=100),
+        Argument('template', required=False, resolve=True, default=None),
     )
 
     def get_context(self, context, title, from_depth, to_depth, **kwargs):
@@ -38,6 +39,9 @@ class ShowMenu(InclusionTag):
         }
 
     def get_template(self, context, title, **kwargs):
+        template = kwargs.get('template', None)
+        if template is not None:
+            return [template]
         return [
             'menuhin/show_menu/%s/default.html' % title,
             'menuhin/show_menu/default.html',
@@ -73,18 +77,19 @@ class ShowSubMenu(InclusionTag):
 
         if menu:
             logger.debug('finding matching node for for %s only' % menu)
-            items = get_menu(menu, request=request).filter_active(request=request)
+            items = get_menu(menu, request=request).filter_active(
+                request=request)
         else:
             logger.debug('finding matching node using all menus')
             items = get_all_menus(request=request)
-            items = itertools.chain.from_iterable([x.filter_active(request=request)
-                                                   for x in items.values()])
+            items = itertools.chain.from_iterable([x.filter_active(
+                request=request) for x in items.values()])
 
         try:
             url = url.get_absolute_url()
         except AttributeError:
             # Might've been an object with a get_absolute_url method. Wasn't.
-            # Now we're assuming it's a string or something we can actually use.
+            # Now we're assuming it's a string or something we can actually use
             pass
 
         # hmmm, this could probably use the active calculator?

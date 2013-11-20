@@ -2,6 +2,7 @@
 from itertools import izip
 from random import randrange
 from django.db.models.loading import get_model
+from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
 from django.utils.unittest import TestCase
 from django.utils.functional import lazy
@@ -16,7 +17,13 @@ from menuhin.models import (Menu, MenuNode, ActiveCalculator,
 
 
 class TestMenu(Menu):
-    def get_nodes(self, parent_node=None):
+    def get_data_for_nodes(self, thing):
+        return {
+            'title': unicode(thing),
+            'url': '/test/%s' % slugify(unicode(thing)),
+        }
+
+    def get_nodes(self, request, parent_node=None):
         id_fmt = 'user_%s'
         previous_user = id_fmt % 0
         UserModel = get_model('auth', 'User')
@@ -24,12 +31,13 @@ class TestMenu(Menu):
             lambda: ContentType.objects.get_for_model(UserModel).pk, int)
         for user in UserModel.objects.all():
             yield MenuNode(
-                title=unicode(user),
-                url='/test/%s' % slugify(unicode(user)),
                 unique_id=id_fmt % user.pk,
                 parent_id=previous_user,
                 content_type=LazyContentType,
                 object_id=user.pk,
+                # allow subclasses to change things without breaking most of
+                # my tests.
+                **self.get_data_for_nodes(thing=user)
             )
             previous_user = id_fmt % user.pk
 
@@ -47,6 +55,12 @@ class TestMenuChild(TestMenu):
         ActiveCalculator(compare_querystrings=True),
     )
 
+    def get_data_for_nodes(self, thing):
+        return {
+            'title': 'test-menu-child ... %s' % unicode(thing),
+            'url': '/test-menu-child/%s' % slugify(unicode(thing)),
+        }
+
     class Meta:
         managed = False
         proxy = True
@@ -57,6 +71,12 @@ class TestMenuGrandChild(TestMenuChild):
         HeirarchyCalculator(start=15),
         # ActiveCalculator(compare_querystrings=True),
     )
+
+    def get_data_for_nodes(self, thing):
+        return {
+            'title': 'test-menu-grandchild ... %s' % unicode(thing),
+            'url': '/grandchild/%s' % slugify(unicode(thing)),
+        }
 
     class Meta:
         managed = False
@@ -69,6 +89,12 @@ class TestMenuSecondChild(TestMenu):
         ActiveCalculator(compare_querystrings=True),
     )
 
+    def get_data_for_nodes(self, thing):
+        return {
+            'title': 'second-child ... %s' % unicode(thing),
+            'url': '/second-child/%s' % slugify(unicode(thing)),
+        }
+
     class Meta:
         managed = False
         proxy = True
@@ -80,7 +106,7 @@ class TestMenuThirdChild(TestMenu):
         ActiveCalculator(compare_querystrings=True),
     )
 
-    def get_nodes(self, parent_node=None):
+    def get_nodes(self, request, parent_node=None):
         yield MenuNode(
             title="I am alone :(",
             url='/alone/',
@@ -92,9 +118,97 @@ class TestMenuThirdChild(TestMenu):
         proxy = True
 
 
+class MenuNodeSanityTests(DjangoTestCase):
+    def test_same_parent_same_unique(self):
+        def generate_node():
+            return MenuNode(title='a', url='b', unique_id='c', parent_id='c')
+        self.assertRaises(ImproperlyConfigured, generate_node)
+
+    def test_unicode_repr(self):
+        node = MenuNode(title='a', url='b', unique_id='c')
+        self.assertEqual(unicode(node), 'a')
+
+    def test_repr(self):
+        node = MenuNode(title='a', url='b', unique_id='c')
+        self.assertEqual(repr(node),
+                         '<menuhin.models.MenuNode: 0 (c, None, a)>')
+
+    def test_object_only_providing_content_type(self):
+        self.assertIsNone(MenuNode(title='a', url='b', unique_id='c',
+                                   content_type=1).object)
+
+    def test_object_only_providing_object_id(self):
+        self.assertIsNone(MenuNode(title='a', url='b', unique_id='c',
+                                   object_id=1).object)
+
+    def test_object_is_none_if_stupid_ctpk(self):
+        self.assertIsNone(MenuNode(title='a', url='b', unique_id='c',
+                                   content_type=99999, object_id=99999).object)
+
+    def test_setting_object(self):
+        user = mommy.make('auth.User')
+        node = MenuNode(title='a', url='b', unique_id='c', content_type=99999,
+                        object_id=99999)
+        node.object = user
+        self.assertIsNotNone(node.object)
+        self.assertEqual(node.object, user)
+
+    def test_contains(self):
+        node1 = MenuNode(title='a', url='b', unique_id='1c')
+        node2 = MenuNode(title='a', url='b', unique_id='2c')
+        node3 = MenuNode(title='a', url='b', unique_id='3c')
+        node4 = MenuNode(title='a', url='b', unique_id='4c')
+        node5 = MenuNode(title='a', url='b', unique_id='5c')
+        node6 = MenuNode(title='a', url='b', unique_id='6c')
+        node1.ancestors = [node2, node3]
+        # make sure node 3 (an ancestor) is IN node 1
+        self.assertIn(node3, node1)
+        # node 4 is not in the ancestors list
+        self.assertNotIn(node4, node1)
+        # nor is node 2 in node 3
+        self.assertNotIn(node2, node3)
+
+        # make sure node 5 (a descendant) is IN node 4
+        node4.descendants = [node5, node6]
+        self.assertIn(node5, node4)
+        # node 1 is not in the descendants for node 4
+        self.assertNotIn(node1, node4)
+        # and node 5 is not in node 6
+        self.assertNotIn(node5, node6)
+
+
+class ActiveCalculatorTests(TestCase):
+    def test_attribute_error_on_bad_request(self):
+        calc = ActiveCalculator()
+        this_node = {'testing': 1}
+        self.assertEqual(this_node, calc(this_node=this_node, other_nodes=(),
+                                         request=()))
+
+    def test_not_comparing_querystrings(self):
+        node = MenuNode(title='a', url='/a/b/?c=d', unique_id='c')
+        calc = ActiveCalculator(compare_querystrings=False)
+        request = RequestFactory().get('/a/b/')
+        # before running
+        was_found_active = node.extra_context.get('is_active', False)
+        self.assertFalse(was_found_active)
+        node = calc(this_node=node, other_nodes=(), request=request)
+        # after running
+        was_found_active = node.extra_context.get('is_active', False)
+        self.assertFalse(was_found_active)
+
+    def test_matching_without_querystrings(self):
+        node = MenuNode(title='a', url='/a/b/', unique_id='c')
+        calc = ActiveCalculator(compare_querystrings=False)
+        request = RequestFactory().get('/a/b/')
+        node = calc(this_node=node, other_nodes=(), request=request)
+        # after running again without a querystring
+        was_found_active = node.extra_context.get('is_active', False)
+        self.assertTrue(was_found_active)
+
+
 class MenuhinBaseTests(DjangoTestCase):
     def setUp(self):
-        self.maxnum = randrange(10, 30)
+        self.maxnum = randrange(50, 100)
 
     def test_creation(self):
         site = Site.objects.all()[0]
@@ -105,6 +219,7 @@ class MenuhinBaseTests(DjangoTestCase):
 
         self.assertEqual(obj.site_id, site.pk)
         self.assertEqual(obj.title, title)
+        self.assertEqual(unicode(obj), title)
         self.assertEqual(obj.display_title, display_title)
 
     def test_descriptor(self):
@@ -132,7 +247,8 @@ class MenuhinBaseTests(DjangoTestCase):
         self.assertEqual(list(menus), [])
 
     def test_not_implemented(self):
-        self.assertRaises(NotImplementedError, Menu().get_nodes)
+        self.assertRaises(NotImplementedError, Menu().get_nodes,
+                          RequestFactory().get('/'))
 
     def test_inserted_models(self):
         with self.assertNumQueries(0):
@@ -158,7 +274,8 @@ class MenuhinBaseTests(DjangoTestCase):
     def test_repr_sanity_etc(self):
         menus = Menu.menus.models()
         menu = next(menus)()
-        for x in menu.get_nodes():
+        request = RequestFactory().get('/')
+        for x in menu.get_nodes(request=request):
             repr = ('<menuhin.models.MenuNode: {obj.depth} ({obj.unique_id}, '
                     '{obj.parent_id}, {obj.title})>'.format(obj=x))
             self.assertEqual(repr, repr(x))
@@ -170,7 +287,8 @@ class MenuhinBaseTests(DjangoTestCase):
         for x in xrange(0, skip):
             MenuKlass = next(menus)
         # with self.assertNumQueries(1):
-        menu = MenuKlass.menus.get_nodes()
+        request = RequestFactory().get('/')
+        menu = MenuKlass.menus.get_nodes(request)
         return users, list(menu), MenuKlass
 
     def test_building(self):
@@ -205,9 +323,10 @@ class MenuhinBaseTests(DjangoTestCase):
     def test_calling_via_subclass_menufinder(self):
         menus = Menu.menus.models()
         MenuKlass = next(menus)
+        request = RequestFactory().get('/')
         with self.assertNumQueries(3):
-            self.assertEqual(list(MenuKlass().get_nodes()),
-                             list(MenuKlass.menus.get_nodes()))
+            self.assertEqual(list(MenuKlass().get_nodes(request=request)),
+                             list(MenuKlass.menus.get_nodes(request=request)))
 
     def test_equality(self):
         users, nodes = self._building_and_menu()[0:2]
@@ -236,10 +355,35 @@ class MenuhinBaseTests(DjangoTestCase):
         node = MenuNode(title='a', url='/', unique_id='1')
         self.assertTrue(True if node else False)
 
+    def test_all_as_api_frontend(self):
+        users, menu, klass = self._building_and_menu(skip=2)
+        self.assertEqual(TestMenuChild, klass)
+        request = RequestFactory().get(
+            '/test-menu-child/%s' % slugify(unicode(users[5]))
+        )
+        get_processed = list(klass.menus.get_processed_nodes(request=request))
+        all_ = list(klass.menus.all(request=request))
+        self.assertEqual(get_processed, all_)
+
+    def test_filter_as_api_frontend(self):
+        users, menu, klass = self._building_and_menu(skip=2)
+        self.assertEqual(TestMenuChild, klass)
+        request = RequestFactory().get(
+            '/test-menu-child/%s' % slugify(unicode(users[5]))
+        )
+        filtered = list(klass.menus.filter(request=request))
+        all_ = list(klass.menus.all(request=request))
+        get_processed = list(klass.menus.get_processed_nodes(request=request))
+        self.assertEqual(get_processed, all_)
+        self.assertEqual(all_, filtered)
+        self.assertEqual(filtered, get_processed)
+
     def test_processors_is_active(self):
         users, menu, klass = self._building_and_menu(skip=2)
         self.assertEqual(TestMenuChild, klass)
-        request = RequestFactory().get('/test/%s' % slugify(unicode(users[5])))
+        request = RequestFactory().get(
+            '/test-menu-child/%s' % slugify(unicode(users[5]))
+        )
         fetched_nodes = list(klass.menus.get_processed_nodes(request=request))
         # sanity ...
         self.assertEqual(len(users), len(fetched_nodes))
@@ -268,7 +412,7 @@ class MenuhinBaseTests(DjangoTestCase):
         self.assertEqual([], first.ancestors)
 
         # all descendants
-        first_descendants = [x for x in klass.menus.get_nodes()
+        first_descendants = [x for x in klass.menus.get_nodes(request=request)
                              if x != first]
         self.assertEqual(first.descendants, first_descendants)
 
@@ -278,7 +422,7 @@ class MenuhinBaseTests(DjangoTestCase):
         self.assertEqual([], last.descendants)
 
         # all ancestors
-        last_ancestors = [x for x in klass.menus.get_nodes()
+        last_ancestors = [x for x in klass.menus.get_nodes(request=request)
                           if x != last]
         self.assertEqual(last.ancestors, last_ancestors)
 
@@ -286,12 +430,11 @@ class MenuhinBaseTests(DjangoTestCase):
         users, menu, klass = self._building_and_menu(skip=4)
         self.assertEqual(TestMenuSecondChild, klass)
         user_offset = 7
-        url = '/test/%s' % slugify(unicode(users[user_offset]))
+        url = '/second-child/%s' % slugify(unicode(users[user_offset]))
         request = RequestFactory().get(url)
         fetched_nodes = list(klass.menus.get_processed_nodes(request=request))
         # sanity ...
         self.assertEqual(len(users), len(fetched_nodes))
-
         active_urls = [x.url for x in fetched_nodes
                        if x.extra_context.get('is_active', False)]
         self.assertEqual(1, len(active_urls))
@@ -299,7 +442,7 @@ class MenuhinBaseTests(DjangoTestCase):
 
         ancestor_urls = [x.url for x in fetched_nodes
                          if x.extra_context.get('is_ancestor', False)]
-        expected_urls = ['/test/%s' % slugify(unicode(x))
+        expected_urls = ['/second-child/%s' % slugify(unicode(x))
                          for x in users[:user_offset]]
         self.assertEqual(user_offset, len(ancestor_urls))
         self.assertEqual(ancestor_urls, expected_urls)
@@ -307,11 +450,12 @@ class MenuhinBaseTests(DjangoTestCase):
         ancestor_objs = [x for x in fetched_nodes
                          if x.extra_context.get('is_ancestor', False)]
         expected_objs = [MenuNode(title=unicode(x),
-                                  url='/test/%s' % slugify(unicode(x)),
+                                  url='/second-child/%s' % slugify(unicode(x)),
                                   unique_id='user_%s' % x.pk)
                          for x in users[:user_offset]]
         self.assertEqual(user_offset, len(ancestor_objs))
         self.assertEqual(ancestor_objs, expected_objs)
+
 
     def test_depth_min_depth(self):
         users, menu, klass = self._building_and_menu(skip=4)
@@ -392,7 +536,8 @@ class MenuhinCustomItemsTests(DjangoTestCase):
         custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
                             title='yay custom!', target_id='user_4',
                             position='replacing', url='/yay/')
-        self.assertEqual(list(custom.to_menunode()), [MenuNode(
+        request = RequestFactory().get('/')
+        self.assertEqual(list(custom.to_menunode(request=request)), [MenuNode(
             title=custom.title,
             url=custom.url,
             unique_id='custom_menu_item_%s' % custom.pk,
@@ -403,27 +548,30 @@ class MenuhinCustomItemsTests(DjangoTestCase):
         custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
                             title='yay custom!', target_id='user_4',
                             position='replacing', url='/yay/')
-        menu = list(TestMenu.menus.get_nodes())
+        request = RequestFactory().get('/')
+        menu = list(TestMenu.menus.get_nodes(request))
         expecting = [menu[3]]
-        self.assertEqual(expecting, list(custom.to_menunode()))
+        self.assertEqual(expecting, list(custom.to_menunode(request=request)))
         self.assertEqual(9, len(menu))
 
     def test_custom_before(self):
         custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
                             title='yay custom!', target_id='user_4',
                             position='above', url='/yay/')
-        menu = list(TestMenu.menus.get_nodes())
+        request = RequestFactory().get('/')
+        menu = list(TestMenu.menus.get_nodes(request=request))
         expecting = [menu[3]]
-        self.assertEqual(expecting, list(custom.to_menunode()))
+        self.assertEqual(expecting, list(custom.to_menunode(request=request)))
         self.assertEqual(10, len(menu))
 
     def test_custom_after(self):
         custom = mommy.make('menuhin.CustomMenuItem', menu=self.menus[0][0],
                             title='yay custom!', target_id='user_4',
                             position='below', url='/yay/')
-        menu = list(TestMenu.menus.get_nodes())
+        request = RequestFactory().get('/')
+        menu = list(TestMenu.menus.get_nodes(request=request))
         expecting = [menu[4]]
-        self.assertEqual(expecting, list(custom.to_menunode()))
+        self.assertEqual(expecting, list(custom.to_menunode(request=request)))
         self.assertEqual(10, len(menu))
 
     def test_custom_attach_menu(self):
@@ -431,13 +579,14 @@ class MenuhinCustomItemsTests(DjangoTestCase):
                             title='yay custom!', target_id='user_4',
                             position='replacing', url='/yay/',
                             attach_menu=self.menus[4][0])
-        self.assertEqual(custom.get_attach_menu(), TestMenuThirdChild)
-        menu = list(TestMenu.menus.get_nodes())
-        extra_nodes = list(custom.to_menunode())
+        request = RequestFactory().get('/')
+        self.assertEqual(custom.get_attach_menu(request), TestMenuThirdChild)
+        menu = list(TestMenu.menus.get_nodes(request=request))
+        extra_nodes = list(custom.to_menunode(request=request))
         self.assertEqual(menu[3], extra_nodes[0])
         self.assertEqual(menu[4], extra_nodes[1])
         self.assertEqual(len(menu), 10)
-        thirdnodes = list(TestMenuThirdChild.menus.get_nodes())
+        thirdnodes = list(TestMenuThirdChild.menus.get_nodes(request=request))
         self.assertEqual(len(thirdnodes), 1)
         self.assertEqual([extra_nodes[1]], thirdnodes)
 
@@ -472,4 +621,20 @@ class MenuhinTemplateTagTests(DjangoTestCase):
         self.assertEqual(safe_lines[-1],
                          '</ol>')
         remainder = safe_lines[1:-1]
-        self.assertEqual('', result.strip())
+        # self.assertEqual('', result.strip())
+
+    def test_plaintext_rendering(self):
+        tmpl = Template("""
+        {% load menus %}
+        {% show_menu "test-menu" 0 100 "menuhin/show_menu/plaintext.html" %}
+        """)
+        url = '/'
+        request = RequestFactory().get(url)
+        result = tmpl.render(RequestContext(request))
+        lines = (x.strip() for x in result.strip().split("\n") if x.strip())
+        safe_lines = list(lines)
+
+        self.assertEqual(len(self.users), len(safe_lines))
+        for line, user in zip(safe_lines, self.users):
+            self.assertEqual(line, '%s [/test/%s]' % (unicode(user),
+                                                      slugify(unicode(user))))

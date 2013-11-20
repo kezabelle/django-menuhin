@@ -5,6 +5,7 @@ from django.views.generic import RedirectView
 from menuhin.models import Node
 from menuhin.signals import shorturl_redirect
 
+
 class MenuShortUrlRedirect(RedirectView):
     model = Node
     permanent = False
@@ -24,5 +25,6 @@ class MenuShortUrlRedirect(RedirectView):
         :rtype: string
         """
         endpoint = get_object_or_404(self.model, pk=base36_to_int(b36_int))
-        shorturl_redirect.send(sender=self.model, instance=endpoint, user=self.request.user)
+        shorturl_redirect.send(sender=self.model, instance=endpoint,
+                               user=self.request.user)
         return endpoint.url

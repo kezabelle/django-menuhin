@@ -3,7 +3,7 @@ import logging
 from urlparse import urlparse
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db.models import SlugField, ForeignKey, CharField
 from django.utils.functional import cached_property
 from django.contrib.contenttypes.models import ContentType
@@ -36,8 +36,9 @@ class Menu(ChangeTracking, Publishing):
         """Reserved for admin/form usage."""
         return self.title
 
-    def get_nodes(self, parent_node=None):
-        raise NotImplementedError('Subclasses should provide this implementation')
+    def get_nodes(self, request, parent_node=None):
+        raise NotImplementedError('Subclasses should provide this '
+                                  'implementation')
 
     class Meta:
         verbose_name = menu_v
@@ -48,7 +49,8 @@ class Menu(ChangeTracking, Publishing):
 class CustomMenuItem(ChangeTracking, Publishing):
     menu = ForeignKey(Menu, related_name="menu_items")
     POSITIONS = Choices('above', 'replacing', 'below')
-    position = CharField(choices=POSITIONS, default=POSITIONS.above, max_length=5)
+    position = CharField(choices=POSITIONS, default=POSITIONS.above,
+                         max_length=5)
     title = CharField(max_length=100, verbose_name=display_title_label)
     url = CharField(max_length=2048)
     # store the parent_id of the menunode to work with.
@@ -60,29 +62,28 @@ class CustomMenuItem(ChangeTracking, Publishing):
     def unique_id(self):
         return 'custom_menu_item_%s' % self.pk
 
-    def get_attach_menu(self):
+    def get_attach_menu(self, request):
         if self.attach_menu is not None:
             return self.attach_menu.menus.model_slug(self.attach_menu.title)
         return None
 
-    def to_menunode(self):
+    def to_menunode(self, request):
         yield MenuNode(
             title=self.title,
             url=self.url,
             unique_id=self.unique_id,
             parent_id=self.target_id,
         )
-        attached = self.get_attach_menu()
+        attached = self.get_attach_menu(request)
         if attached is not None:
-            for node in attached.menus.get_nodes(parent_node=self.target_id):
+            for node in attached.menus.get_nodes(request=request,
+                                                 parent_node=self.target_id):
                 yield node
 
 
-
-
 class MenuNode(object):
-    __slots__ = ('title', 'url', 'unique_id', 'parent_id', 'depth', 'ancestors',
-                 'descendants', 'extra_context', '_object', 'object')
+    __slots__ = ('title', 'url', 'unique_id', 'parent_id', 'depth',
+                 'ancestors', 'descendants', 'extra_context', '_object',)
 
     def __init__(self, title, url, unique_id, parent_id=None, **kwargs):
         self.title = title
@@ -101,6 +102,9 @@ class MenuNode(object):
         """Familiar API ..."""
         return self.url
 
+    def depth_from_root(self):
+        return range(0, self.depth)
+
     def _get_object(self):
         if self._object is None:
             if 'content_type' not in self.extra_context:
@@ -112,9 +116,9 @@ class MenuNode(object):
                                'providing `object_id`')
                 return self._object
 
-            model = ContentType.objects.get_for_id(
-                self.extra_context['content_type'])
             try:
+                model = ContentType.objects.get_for_id(
+                    self.extra_context['content_type'])
                 self._object = model.model_class()._default_manager.get(
                     pk=self.extra_context['object_id'])
             except ObjectDoesNotExist as e:
@@ -143,41 +147,15 @@ class MenuNode(object):
 
         :return: :data:`True` or :data:`False`
         """
-        return len(self.title) > 0 and len(self.url) > 0 and len(self.unique_id) > 0
+        return (len(self.title) > 0 and
+                len(self.url) > 0 and
+                len(self.unique_id) > 0)
 
     def __eq__(self, other):
         return other.unique_id == self.unique_id
 
     def __ne__(self, other):
         return other.unique_id != self.unique_id
-
-    # def __getattr__(self, attr):
-    #     """
-    #     Anything not in `__slots__` should be pulled out of the extra context
-    #     dictionary.
-    #
-    #     :param attr: attribute name to look up.
-    #     :return: the value stored in the `extra_context` dictionary.
-    #     """
-    #     return self.extra_context.get(attr, None)
-    #
-    # __getitem__ = __getattr__
-    #
-    # def __setattr__(self, key, value):
-    #     """
-    #     If the `key` is one which we know about (ie: is in `__slots__`) then
-    #     apply it directly, otherwise push it into the `extra_context`
-    #
-    #     :param key: the attribute to try and set.
-    #     :param value: the value to apply to either the object or the dictionary.
-    #     :return: :data:`None`
-    #     """
-    #     if hasattr(self, key):
-    #         object.__setattr__(self, key, value)
-    #     else:
-    #         self.extra_context.update(key=value)
-    #
-    # __setitem__ = __setattr__
 
     def __contains__(self, item):
         """
@@ -222,7 +200,7 @@ class ActiveCalculator(object):
     __slots__ = ('compare_querystrings',)
 
     def __init__(self, compare_querystrings=True):
-        self.compare_querystrings = True
+        self.compare_querystrings = compare_querystrings
 
     def __call__(self, this_node, other_nodes, request, **kwargs):
         try:

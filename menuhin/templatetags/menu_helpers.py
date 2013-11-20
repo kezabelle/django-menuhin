@@ -48,6 +48,7 @@ register = template.Library()
 # register.tag(IfDepthLess)
 #
 
+
 class DepthHandler(Tag):
     name = 'depth'
     options = Options(
