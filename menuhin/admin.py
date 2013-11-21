@@ -2,23 +2,55 @@
 from copy import deepcopy
 from django.contrib import admin
 from django.forms import ModelForm, Select
+from django.forms.models import BaseInlineFormSet
 from helpfulfields.admin import (changetracking_fieldset,
                                  changetracking_readonlys)
-from menuhin.models import Menu, menu_handlers, CustomMenuItem
+from menuhin.models import Menu, CustomMenuItem
 from menuhin.text import config_fieldset_label
 
 
 class CustomMenuItemForm(ModelForm):
     def __init__(self, *args, **kwargs):
+        self.parent_instance = None
+        if 'parent_instance' in kwargs:
+            self.parent_instance = kwargs.pop('parent_instance')
+
         super(CustomMenuItemForm, self).__init__(*args, **kwargs)
-        self.fields['parent_id'].widget = Select(choices=())
+        self.fields['target_id'].widget = Select(choices=())
         self.fields['attach_menu'].required = False
 
-    def clean(self):
-        return super(CustomMenuItemForm, self).clean()
+        # don't allow linking to self
+        # TODO: + any in self's descendant nodes?
+        if self.parent_instance is not None and self.parent_instance.pk:
+            exclude = Menu.objects.exclude(pk=self.parent_instance.pk)
+            self.fields['attach_menu'].queryset &= exclude
 
     class Meta:
         model = CustomMenuItem
+
+
+class CustomMenuItemFormSet(BaseInlineFormSet):
+    """
+    This crap is needed to put the currently edited object into the bloody
+    modelform ...
+    """
+    def _construct_form(self, i, **kwargs):
+        kwargs['parent_instance'] = self.instance
+        return super(CustomMenuItemFormSet, self)._construct_form(i, **kwargs)
+
+    @property
+    def empty_form(self):
+        """
+        Exactly the same as upstream, + parent_instance.
+        """
+        form = self.form(
+            auto_id=self.auto_id,
+            prefix=self.add_prefix('__prefix__'),
+            empty_permitted=True,
+            parent_instance=self.instance,
+        )
+        self.add_fields(form, None)
+        return form
 
 
 class CustomMenuItemInline(admin.StackedInline):
@@ -28,10 +60,11 @@ class CustomMenuItemInline(admin.StackedInline):
     fields = (
         'title',
         ('url', 'attach_menu'),
-        ('position', 'parent_id'),
+        ('position', 'target_id'),
         'is_published'
     )
     form = CustomMenuItemForm
+    formset = CustomMenuItemFormSet
 
 
 class MenuAdmin(admin.ModelAdmin):
@@ -92,22 +125,19 @@ class MenuAdmin(admin.ModelAdmin):
             return ['title'] + deepcopy(self.readonly_fields)
         return self.readonly_fields
 
-    def has_delete_permission(self, request, obj=None):
-        """
-        Do we have permission to delete this menu?
-        """
-        if obj is not None:
-            all_menus = menu_handlers.menus
-            if obj.title in all_menus.keys():
-                return False
-        return super(MenuAdmin, self).has_delete_permission(request, obj)
+    def ensure_menus(self):
+        return len(set(Menu.menus.get_or_create())) > 0
 
-    def get_object(self, *args, **kwargs):
-        """
-        On viewing an object, let's make sure we've loaded all the menus.
-        """
-        obj = super(MenuAdmin, self).get_object(*args, **kwargs)
-        if obj is not None:
-            menu_handlers.load_menus()
-        return obj
+    def has_add_permission(self, *args, **kwargs):
+        menus_created = self.ensure_menus()
+        return super(MenuAdmin, self).has_add_permission(*args, **kwargs)
+
+    def has_change_permission(self, *args, **kwargs):
+        menus_created = self.ensure_menus()
+        return super(MenuAdmin, self).has_change_permission(*args, **kwargs)
+
+    def has_delete_permission(self, *args, **kwargs):
+        menus_created = self.ensure_menus()
+        return super(MenuAdmin, self).has_delete_permission(*args, **kwargs)
+
 admin.site.register(Menu, MenuAdmin)
