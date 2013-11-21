@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+from django.conf import settings
 from django.db.models import OneToOneField
 from django.template.defaultfilters import slugify
+from django.utils import six
+from django.utils.importlib import import_module
 from helpfulfields.querysets import ChangeTrackingQuerySet, PublishingQuerySet
 
 
@@ -30,6 +33,19 @@ class MenuFinder(object):
             for subobj in self._all_models(model=obj.field.model):
                 yield subobj
 
+    def _do_imports(self):
+        """ :( """
+        count = 0
+        for app in settings.INSTALLED_APPS:
+            module_path = '{0}.menus'.format(app)
+            try:
+                module = import_module(module_path)
+                count += 1
+            except ImportError as e:
+                pass
+        # did we find anything?
+        return count > 0
+
     def _all_models(self, model):
         """
         Discovery of menus via proxy models
@@ -45,6 +61,7 @@ class MenuFinder(object):
         """
         Returns all possible menu model classes (not instances)
         """
+        self._do_imports()
         for model in self._all_models(model=self.model):
             yield model
 
