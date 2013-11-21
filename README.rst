@@ -57,6 +57,9 @@ Anything that is a proxy of ``Menu`` is autodiscovered and usable. Individual
 ``Menu`` instances expose a vaguely ``QuerySet`` like API, with
 ``Menu.menus.all()`` and ``Menu.menus.filter()``.
 
+Nothing is cached, so assuming the context provided a ``request``, you can do
+per-request filtering of nodes at the earliest point in the menu's lifecycle.
+
 The future
 ----------
 
