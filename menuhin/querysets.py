@@ -67,7 +67,7 @@ class MenuFinder(object):
 
     def model_slugs(self, lookups):
         for model in self.models():
-            if slugify(model._meta.verbose_name)[:50] in lookups:
+            if slugify(model._meta.verbose_name_plural)[:50] in lookups:
                 yield model
 
     def model_slug(self, lookup):
@@ -80,17 +80,20 @@ class MenuFinder(object):
         if site is None:
             site = self.model._meta.get_field_by_name('site')[0].default()
         for model in self.models():
-            arguments = {
-                'title': slugify(model._meta.verbose_name)[:50],
-                'display_title': model._meta.verbose_name[:50],
+            kwargs = {
+                'title': slugify(model._meta.verbose_name_plural)[:50].strip(),
                 'site': site,
             }
-            fixed_arguments = dict((k, v) for k, v in arguments.iteritems()
-                                   if v)
-            yield self.model.objects.get_or_create(**fixed_arguments)
+            # don't include the changeable display title in the get call.
+            try:
+                yield self.model.objects.get(**kwargs)
+            except self.model.DoesNotExist:
+                kwargs.update(is_published=False,
+                              display_title=model._meta.verbose_name_plural[:50].strip())  # noqa
+                yield self.model.objects.create(**kwargs)
 
     def get_nodes(self, request, parent_node=None):
-        pk = slugify(self.model._meta.verbose_name)[:50]
+        pk = slugify(self.model._meta.verbose_name_plural)[:50]
         instance = self.model(pk=pk)
         custom_menu_items = dict((x.target_id, x)
                                  for x in instance.menu_items.all())
