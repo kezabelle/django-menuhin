@@ -128,16 +128,11 @@ class MenuAdmin(admin.ModelAdmin):
     def ensure_menus(self):
         return len(set(Menu.menus.get_or_create())) > 0
 
-    def has_add_permission(self, *args, **kwargs):
-        menus_created = self.ensure_menus()
-        return super(MenuAdmin, self).has_add_permission(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(MenuAdmin, self).__init__(*args, **kwargs)
 
-    def has_change_permission(self, *args, **kwargs):
-        menus_created = self.ensure_menus()
-        return super(MenuAdmin, self).has_change_permission(*args, **kwargs)
-
-    def has_delete_permission(self, *args, **kwargs):
-        menus_created = self.ensure_menus()
-        return super(MenuAdmin, self).has_delete_permission(*args, **kwargs)
+    def get_model_perms(self, request):
+        self.ensure_menus()
+        return super(MenuAdmin, self).get_model_perms(request=request)
 
 admin.site.register(Menu, MenuAdmin)
