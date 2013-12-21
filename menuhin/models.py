@@ -38,7 +38,7 @@ class Menu(ChangeTracking, Publishing):
         return self.title
 
     def get_nodes(self, request, parent_node=None):
-        raise NotImplementedError('Subclasses should provide this '
+        raise NotImplementedError('Subclasses should provide a `get_nodes` '
                                   'implementation')
 
     class Meta:
