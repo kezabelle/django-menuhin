@@ -188,10 +188,16 @@ class HeirarchyCalculator(object):
         while parent is not None:
             if parent not in other_nodes:
                 parent = None
+                logger.debug('{id} not found in the other nodes, '
+                             'halting loop'.format(id=parent))
             else:
                 next_parent = other_nodes[parent]
                 ancestors.append(next_parent)
+                logger.debug('{id} was found in the other nodes, continuing '
+                             'loop using new parent: {new}'.format(
+                                 new=next_parent.parent_id, id=parent))
                 parent = next_parent.parent_id
+
         this_node.ancestors = ancestors[::-1]
         # get rid of self.
         this_node.ancestors.pop()
