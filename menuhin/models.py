@@ -154,9 +154,10 @@ class MenuNode(object):
 
         :return: :data:`True` or :data:`False`
         """
-        return (len(self.title) > 0 and
-                len(self.url) > 0 and
-                len(self.unique_id) > 0)
+        has_title = len(self.title) > 0
+        has_url = len(self.url) > 0
+        has_id = len(self.unique_id) > 0
+        return has_title and has_url and has_id
 
     def __eq__(self, other):
         return other.unique_id == self.unique_id
