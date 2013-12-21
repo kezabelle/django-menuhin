@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
 from django.conf import settings
 from django.db.models import OneToOneField
 from django.template.defaultfilters import slugify
-from django.utils import six
 from django.utils.importlib import import_module
 from helpfulfields.querysets import ChangeTrackingQuerySet, PublishingQuerySet
+
+logger = logging.getLogger(__name__)
 
 
 class MenuQuerySet(ChangeTrackingQuerySet, PublishingQuerySet):
@@ -39,9 +41,11 @@ class MenuFinder(object):
         for app in settings.INSTALLED_APPS:
             module_path = '{0}.menus'.format(app)
             try:
-                module = import_module(module_path)
+                import_module(module_path)
+                logger.info('Found menu module `{0}`'.format(module_path))
                 count += 1
             except ImportError as e:
+                logger.debug('No menus found at `{0}`'.format(module_path))
                 pass
         # did we find anything?
         return count > 0
@@ -128,6 +132,7 @@ class MenuFinder(object):
     def get_processed_nodes(self, request, parent_node=None):
         nodes = self.get_nodes(request=request, parent_node=parent_node)
         if not self.model.processors:
+            logger.debug('no processors found for {0!r}'.format(self.model))
             for node in nodes:
                 yield node
 
@@ -139,6 +144,8 @@ class MenuFinder(object):
 
         for node in nodes_to_use:
             for processor in self.model.processors:
+                logger.info('processing {0!r} using {1!r}'.format(node,
+                                                                  processor))
                 node = processor(this_node=node, other_nodes=tree,
                                  request=request)
             yield node
