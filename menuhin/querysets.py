@@ -71,7 +71,19 @@ class MenuFinder(object):
 
     def model_slugs(self, lookups):
         for model in self.models():
-            if slugify(model._meta.verbose_name_plural)[:50] in lookups:
+
+            singular = slugify(model._meta.verbose_name)[:50]
+            plural = slugify(model._meta.verbose_name_plural)[:50]
+            plural_found = plural in lookups
+            singular_found = singular in lookups
+
+            if plural_found or singular_found:
+                logger.debug('Found {cls!r} menu using the {singplur} form '
+                             'of the verbose name, `{result}`'.format(
+                                 cls=model,
+                                 singplur='singular' if singular_found else 'plural',  # noqa
+                                 result=singular if singular_found else plural
+                             ))
                 yield model
 
     def model_slug(self, lookup):
