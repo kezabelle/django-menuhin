@@ -10,9 +10,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.contenttypes',
     'django.contrib.auth',
-    'helpfulfields',
     'menuhin',
-    'django_pdb',
 )
 
 SKIP_SOUTH_TESTS = True

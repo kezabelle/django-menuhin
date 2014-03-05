@@ -1,13 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
 import os
+from setuptools import setup
+
 try:
-    from setuptools import setup
+    from setuptest import test
+    test_config = {
+        'cmdclass': {'test': test}
+    }
 except ImportError:
-    from distutils.core import setup
+    test_config = {
+        'tests_require': (
+            'django-setuptest',
+            ),
+        'test_suite': 'setuptest.setuptest.SetupTestSuite'
+    }
+    for argument in ('--failfast', '--autoreload', '--label'):
+        if argument in sys.argv:
+            sys.argv.remove(argument)
+
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
+def make_readme(root_path):
+    FILES = ('README.rst', 'LICENSE', 'CHANGELOG', 'CONTRIBUTORS')
+    for filename in FILES:
+        filepath = os.path.realpath(os.path.join(HERE, filename))
+        if os.path.isfile(filepath):
+            with open(filepath, mode='r') as f:
+                yield f.read()
+
+LONG_DESCRIPTION = "\r\n\r\n----\r\n\r\n".join(make_readme(HERE))
 
 setup(
     name='django-menuhin',
@@ -15,7 +39,7 @@ setup(
     author='Keryn Knight',
     author_email='python-package@kerynknight.com',
     description="generating menus for Django apps",
-    long_description=open(os.path.join(HERE, 'README.rst')).read(),
+    long_description=LONG_DESCRIPTION,
     packages=[
         'menuhin',
     ],
@@ -30,7 +54,6 @@ setup(
         'model-mommy>=1.2',
         'django-pdb>=0.3.2',
     ],
-    test_suite='setuptest.setuptest.SetupTestSuite',
     zip_safe=False,
     keywords='django menu',
     license="BSD License",
@@ -46,4 +69,5 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
+    **test_config
 )

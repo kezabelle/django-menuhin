@@ -1,0 +1,11 @@
+{% load i18n %}
+{% if missing %}
+<p>{% trans "The following items haven't yet been added" %}:</p>
+<ul>
+    {% for uri_obj in missing %}
+    <li><a href="{{ uri_obj.path }}">{{ uri_obj.title }}</a></li>
+    {% endfor %}
+</ul>
+{% else %}
+{% trans "No missing items" %}
+{% endif %}

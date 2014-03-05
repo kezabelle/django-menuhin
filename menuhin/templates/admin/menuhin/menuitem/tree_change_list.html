@@ -1,0 +1,12 @@
+{% extends "admin/tree_change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+<li>
+  {% url cl.opts|admin_urlname:'import' as import_url %}
+  <a href="{{ import_url }}" class="addlink">
+    {% blocktrans with cl.opts.verbose_name_plural as name %}Import {{ name }}{% endblocktrans %}
+  </a>
+</li>
+{{ block.super }}
+{% endblock %}
