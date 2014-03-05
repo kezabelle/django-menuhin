@@ -15,6 +15,7 @@ except ImportError:
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 from django.utils.text import slugify
+from django.contrib.sites.models import Site
 from .signals import default_for_site_created, default_for_site_needed
 from django.conf import settings
 
@@ -68,7 +69,7 @@ DefaultForSite = namedtuple('DefaultForSite', ('obj', 'created'))
 
 def ensure_default_for_site(model, site_id=None):
     if site_id is None:
-        site_id = settings.SITE_ID
+        site_id = Site.objects.get_current()
     kwargs = {'menu_slug': 'default', 'site_id': site_id}
     try:
         obj = model.objects.get(**kwargs)
@@ -134,7 +135,7 @@ change_published_status.short_description = "Toggle published"
 
 def find_missing(model, urls, site_id=None):
     if site_id is None:
-        site_id = settings.SITE_ID
+        site_id = Site.objects.get_current()
 
     paths = reduce(or_, (Q(uri__iexact=x.path) for x in urls))
     url_count = len(paths)
@@ -155,7 +156,7 @@ MenuItemURI = namedtuple('MenuItemURI', ('instance', 'uri'))
 
 def add_urls(model, urls, site_id=None):
     if site_id is None:
-        site_id = settings.SITE_ID
+        site_id = Site.objects.get_current()
     for url in urls:
         instance = model.add_root(uri=url.path, is_published=False,
                                   title=url.title, site_id=site_id,
