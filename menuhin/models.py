@@ -114,10 +114,10 @@ URI = namedtuple('URI', ('path', 'title'))
 
 
 def get_ancestors_for_request(request):
-    return (x for x in get_relations_for_request(
-            model=MenuItem, request=request, relation='get_ancestors'))
+    return get_relations_for_request(model=MenuItem, request=request,
+                                     relation='get_ancestors').relations
 
 
 def get_descendants_for_request(request):
-    return (x for x in get_relations_for_request(
-            model=MenuItem, request=request, relation='get_descendants'))
+    return get_relations_for_request(model=MenuItem, request=request,
+                                     relation='get_descendants').relations

@@ -48,18 +48,11 @@ class RequestRelations(namedtuple('RequestRelations', ('relations', 'obj',
 
 
 def get_relations_for_request(model, request, relation):
-    path = request.path.strip('/')
+    path = request.path
+    site = Site.objects.get_current()
     try:
-        item = model.objects.get(uri__iexact=path)
-    except model.DoesNotExist:
-        return RequestRelations(relations=(), obj=None, requested=relation,
-                                path=path)
-    except model.MultipleObjectsReturned:
-        log_args = {'path': path, 'request': request,
-                    'model': model.__class__.__name__}
-        logger.error(
-            "{path} is in a menu at least twice ...".format(**log_args),
-            exc_info=1, extra=log_args)
+        item = model.objects.filter(uri__iexact=path, site=site)[:1][0]
+    except IndexError:
         return RequestRelations(relations=(), obj=None, requested=relation,
                                 path=path)
     else:
