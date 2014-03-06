@@ -18,8 +18,7 @@ class RequestTreeMiddleware(object):
         if request.path.startswith(tuple(self.get_ignorables())):
             return None
 
-        returntypes = (MP_NodeQuerySet, tuple)
         request.ancestors = lazy(
-            lambda: get_ancestors_for_request(request), *returntypes)
+            lambda: get_ancestors_for_request(request), MP_NodeQuerySet)
         request.descendants = lazy(
-            lambda: get_descendants_for_request(request), *returntypes)
+            lambda: get_descendants_for_request(request), MP_NodeQuerySet)

@@ -54,8 +54,8 @@ def get_relations_for_request(model, request, relation):
     try:
         item = model.objects.filter(uri__iexact=path, site=site)[:1][0]
     except IndexError:
-        return RequestRelations(relations=(), obj=None, requested=relation,
-                                path=path)
+        return RequestRelations(relations=model.objects.none(), obj=None,
+                                requested=relation, path=path)
     else:
         attr = getattr(item, relation)
         while callable(attr):
