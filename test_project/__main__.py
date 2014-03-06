@@ -87,6 +87,7 @@ d.urlpatterns += d.patterns('',
                                   include(debug_toolbar.urls)),
 #                            d.url(r'^', include(patternatlas.urlconf)))
                             )
+d.add_view(r'^', include('test_app.urls'))
 
 
 if __name__ == "__main__":

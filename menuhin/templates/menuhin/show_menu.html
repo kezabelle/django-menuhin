@@ -1,0 +1,14 @@
+{% spaceless %}
+{% for node, node_metadata in menu_nodes %}
+    {% if node_metadata.open %}
+        <ul class="menu-new-depth menu-depth-{{ node_metadata.level }}">
+        <li class="menu-item menu-item-depth-{{ node_metadata.level }}">
+    {% else %}
+        </li><li class="menu-item menu-item-depth-{{ node_metadata.level }}">
+    {% endif %}
+    <a href="{{ node.get_absolute_url }}" class="menu-link menu-link-depth-{{ node_metadata.level }}">{{ node.title }}</a>
+    {% for close in node_metadata.close %}
+        </li></ul>
+    {% endfor %}
+{% endfor %}
+{% endspaceless %}

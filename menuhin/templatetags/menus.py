@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import logging
+from django.contrib.sites.models import Site
 from classytags.core import Options
 from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
-from menuhin.models import Menu
+from menuhin.models import MenuItem
 from django import template
-import itertools
-from django.core.validators import validate_slug
 
 
 register = template.Library()
@@ -14,41 +13,38 @@ logger = logging.getLogger(__name__)
 
 
 class ShowMenu(InclusionTag, AsTag):
-    template = 'menuhin/none.html'
+    template = 'menuhin/show_menu.html'
     options = Options(
-        Argument('title', required=True, resolve=True, default=None),
-        Argument('from_depth', required=False, resolve=True, default=0),
+        Argument('menu_slug', required=False, resolve=True,
+                 default='default'),
         Argument('to_depth', required=False, resolve=True, default=100),
         Argument('template', required=False, resolve=True, default=None),
         'as', Argument('var', required=False, default=None, resolve=False)
-
     )
 
-    def get_context(self, context, title, from_depth, to_depth, **kwargs):
+    def get_context(self, context, menu_slug, to_depth, template, **kwargs):
         request = None
         if 'request' in context:
             request = context['request']
-        FoundMenu = Menu.menus.model_slug(title)
-        nodes = FoundMenu.menus.filter(request=request, min_depth=from_depth,
-                                       max_depth=to_depth)
-        final_nodes = list(nodes)
-        return {
-            'nodes': final_nodes,
-            'menu': FoundMenu,
-            'from_depth': from_depth,
-            'to_depth': to_depth,
-            'is_submenu': False,
-        }
 
-    def get_template(self, context, title, **kwargs):
-        template = kwargs.get('template', None)
-        if template is not None:
-            return [template]
-        return [
-            'menuhin/show_menu/%s/default.html' % title,
-            'menuhin/show_menu/default.html',
-            self.template,
-        ]
+        site = Site.objects.get_current()
+
+        try:
+            menu_root = MenuItem.objects.get(menu_slug=menu_slug, site=site,
+                                             is_published=True)
+        except MenuItem.DoesNotExist:
+            return {}
+        annotated_menu = MenuItem.get_annotated_list(parent=menu_root)
+
+        return {
+            'menu_nodes': tuple(x for x in annotated_menu
+                                if x[1]['level'] <= to_depth),
+                                # and x[0].is_published is True),
+            'to_depth': to_depth,
+            'menu_root': menu_root,
+            'template': template or self.template,
+            'request_in_context': request is not None,
+        }
 
     def render_tag(self, context, **kwargs):
         #: this is basically from the core :class:`~classytags.core.Tag`
@@ -59,4 +55,4 @@ class ShowMenu(InclusionTag, AsTag):
             context[varname] = self.get_context(context, **kwargs)
             return ''
         return super(ShowMenu, self).render_tag(context, **kwargs)
-register.tag(name='show_menu', compile_function=ShowMenu)
+register.tag(ShowMenu)

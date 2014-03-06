@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+    {% load menus %}
+    <h1>Menus!</h1>
+    <h2>The <code>"default"</code> menu for this <code>Site</code></h2>
+    {% show_menu %}
+    <hr>
+    <h2>A named submenu, fetched by <code>menu_slug</code></h2>
+    {% show_menu "asaasfasf" %}
+    <hr>
+    <h2>Collecting the menu into a context variable</h2>
+    {% show_menu "default" as contextvar %}
+    to depth: {{ contextvar.to_depth }}<br>
+    root node: {{ contextvar.menu_root.title }}<br>
+    using template: {{ contextvar.template }}<br>
+    nodes themselves:<br>
+    <ol>
+        {% for node, meta in contextvar.menu_nodes %}
+        <li><a href="{{ node.get_absolute_url }}">{{ node.title }}</a></li>
+        {% endfor %}
+    </ol>
+    </body>
+</html>
