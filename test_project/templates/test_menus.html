@@ -27,5 +27,8 @@
         <li><a href="{{ node.get_absolute_url }}">{{ node.title }}</a></li>
         {% endfor %}
     </ol>
+    <hr>
+    <h2>Breadcrumbs!</h2>
+    {% show_breadcrumbs request.path %}
     </body>
 </html>

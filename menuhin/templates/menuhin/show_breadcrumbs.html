@@ -1,0 +1,14 @@
+{% if ancestor_nodes %}
+<ol class="breadcrumbs">
+    {% for ancestor in ancestor_nodes %}
+        <li class="breadcrumbs-ancestor {% if forloop.first %}breadcrumbs-first{% endif %}">
+        <a href="{{ ancestor.get_absolute_url }}" class="breadcrumbs-ancestor-link">{{ ancestor.title }}</a>
+        </li>
+    {% endfor %}
+    {% if menu_node %}
+        <li class="breadcrumbs-self breadcrumbs-last">
+        <a href="{{ menu_node.get_absolute_url }}" class="breadcrumbs-self-link">{{ menu_node.title }}</a>
+        </li>
+    {% endif %}
+</ol>
+{% endif %}
