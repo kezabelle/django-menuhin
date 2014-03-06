@@ -34,12 +34,13 @@ class ShowMenu(InclusionTag, AsTag):
                                              is_published=True)
         except MenuItem.DoesNotExist:
             return {}
-        annotated_menu = MenuItem.get_annotated_list(parent=menu_root)
+
+        annotated_menu = MenuItem.get_published_annotated_list(
+            parent=menu_root)
 
         return {
             'menu_nodes': tuple(x for x in annotated_menu
                                 if x[1]['level'] <= to_depth),
-                                # and x[0].is_published is True),
             'to_depth': to_depth,
             'menu_root': menu_root,
             'template': template or self.template,

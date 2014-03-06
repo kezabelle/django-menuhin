@@ -89,6 +89,25 @@ class MenuItem(TimeStampedModel, MP_Node):
             return self.title.format(**context)
         return self.title
 
+    @classmethod
+    def get_published_annotated_list(cls, parent=None):
+        """
+        Gets an annotated list from a tree branch.
+
+        :param parent:
+
+            The node whose descendants will be annotated. The node itself
+            will be included in the list. If not given, the entire tree
+            will be annotated.
+        """
+        result = super(MenuItem, cls).get_annotated_list(parent)
+        for base_result in result:
+            if base_result[0].is_published:
+                yield base_result
+            else:
+                yield base_result
+        # return result
+
     class Meta:
         verbose_name = menuitem_v
         verbose_name_plural = menu_vp
