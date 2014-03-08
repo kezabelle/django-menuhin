@@ -61,8 +61,12 @@ def get_relations_for_request(model, request, relation):
     else:
         # not using the middleware
         item = get_menuitem_or_none(model, request.path)
-        if item is None:
-            return sentinel_error
+
+    # yeah, we can't do is not None here, because while NoneType may be
+    # what item yields, it is potentially a SimpleLazyObject, for which the
+    # identity check doesn't work.
+    if not item:
+        return sentinel_error
 
     attr = getattr(item, relation)
     while callable(attr):
