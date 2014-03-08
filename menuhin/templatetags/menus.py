@@ -33,9 +33,18 @@ class ShowMenu(InclusionTag, AsTag):
             'request_in_context': 'request' in context,
         }
 
+        # if doing a PK lookup, given the PK is unique across any site, assume
+        # the user knows wtf they're doing, so don't ask for only this site,
+        # as that may never match.
+        if menu_slug.isdigit():
+            lookup = {'pk': int(menu_slug), 'is_published': True}
+        # this is the most common operation ...
+        else:
+            lookup = {'menu_slug': menu_slug, 'site': site,
+                      'is_published': True}
+        base.update(query=lookup)
         try:
-            menu_root = MenuItem.objects.get(menu_slug=menu_slug, site=site,
-                                             is_published=True)
+            menu_root = MenuItem.objects.get(**lookup)
         except MenuItem.DoesNotExist:
             return base
 
