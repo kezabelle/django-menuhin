@@ -85,9 +85,16 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
             'request_in_context': 'request' in context,
         }
 
-        lookup = {'menu_slug': path_or_menuslug}
-        if not slug_re.search(path_or_menuslug):
+        # try to go by PK, or if there's no invalid characters (eg: /:_ ...)
+        # by menu_slug, otherwise falling back to assuming the input is
+        # request.path or whatevers.
+        if path_or_menuslug.isdigit():
+            lookup = {'pk': int(path_or_menuslug)}
+        elif slug_re.search(path_or_menuslug):
+            lookup = {'menu_slug': path_or_menuslug}
+        else:
             lookup = {'uri__iexact': path_or_menuslug}
+
         lookup.update(site=site, is_published=True)
         base.update(query=lookup)
         try:
