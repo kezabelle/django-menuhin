@@ -1,6 +1,7 @@
 import logging
 from collections import namedtuple
 from operator import or_
+from django.utils.functional import SimpleLazyObject, new_method_proxy
 
 try:
     from importlib import import_module
@@ -46,6 +47,11 @@ class RequestRelations(namedtuple('RequestRelations', ('relations', 'obj',
         return self.has_relations() and self.found_instance()
 
     __nonzero__ = __bool__
+
+
+class LengthLazyObject(SimpleLazyObject):
+    __dir__ = new_method_proxy(dir)
+    __len__ = new_method_proxy(len)
 
 
 def get_relations_for_request(model, request, relation):

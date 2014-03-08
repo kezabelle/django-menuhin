@@ -1,14 +1,17 @@
-from django.utils.functional import lazy
-from treebeard.mp_tree import MP_NodeQuerySet
-from .models import get_ancestors_for_request, get_descendants_for_request
+
+from .models import MenuItem
+from .utils import LengthLazyObject, get_relations_for_request
 
 
 def request_ancestors(request):
     if hasattr(request, 'ancestors'):
         ancestors = request.ancestors
     else:
-        ancestors = lazy(
-            lambda: get_ancestors_for_request(request), MP_NodeQuerySet)
+        def lazy_ancestor_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_ancestors').relations
+        ancestors = LengthLazyObject(lazy_ancestor_func)
     return {
         'MENUHIN_ANCESTORS': ancestors
     }
@@ -18,8 +21,11 @@ def request_descendants(request):
     if hasattr(request, 'descendants'):
         descendants = request.descendants
     else:
-        descendants = lazy(
-            lambda: get_descendants_for_request(request), MP_NodeQuerySet)
+        def lazy_descendants_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_descendants').relations
+        descendants = LengthLazyObject(request_descendants)
     return {
         'MENUHIN_DESCENDANTS': descendants
     }

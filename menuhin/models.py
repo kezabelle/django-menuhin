@@ -140,17 +140,3 @@ class MenuItemGroup(object):
 
 # collects just a path and a page title, used for inserting.
 URI = namedtuple('URI', ('path', 'title'))
-
-
-# class SafeMenuItem(namedtuple('SafeMenuItem', ['menu_slug', 'site_id',
-#                    'title', 'uri'])):
-
-
-def get_ancestors_for_request(request):
-    return get_relations_for_request(model=MenuItem, request=request,
-                                     relation='get_ancestors').relations
-
-
-def get_descendants_for_request(request):
-    return get_relations_for_request(model=MenuItem, request=request,
-                                     relation='get_descendants').relations

@@ -17,6 +17,10 @@
     {% for ance in request.ancestors %}{% parse_title ance %}<br>{% empty %}none :({% endfor %}
     <h3>Descendants</h3>
     {% for desc in request.descendants %}{% parse_title desc %}<br>{% empty %}none :({% endfor %}
+    <h3>Siblings</h3>
+    {% for sib in request.siblings %}{% parse_title sib %}<br>{% empty %}none :({% endfor %}
+    <h3>Children</h3>
+    {% for child in request.children %}{% parse_title child %}<br>{% empty %}none :({% endfor %}
     <hr>
     <h2>Context processors</h2>
     <h3>Ancestors</h3>

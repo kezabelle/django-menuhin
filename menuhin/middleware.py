@@ -1,10 +1,13 @@
-from django.utils.functional import lazy, SimpleLazyObject
+import logging
+from django.utils.functional import SimpleLazyObject
 from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
-from treebeard.mp_tree import MP_NodeQuerySet
-from .models import (MenuItem, get_ancestors_for_request,
-                     get_descendants_for_request)
-from .utils import get_menuitem_or_none
+from .models import MenuItem
+from .utils import (LengthLazyObject, get_menuitem_or_none,
+                    get_relations_for_request)
+
+
+logger = logging.getLogger(__name__)
 
 
 class RequestTreeMiddleware(object):
@@ -14,16 +17,38 @@ class RequestTreeMiddleware(object):
         try:
             yield reverse('admin:index')
         except NoReverseMatch:
-            pass
+            logger.debug("Admin is not mounted")
 
     def process_request(self, request):
         if request.path.startswith(tuple(self.get_ignorables())):
+            logger.debug("Skipping this request")
             return None
 
-        request.menuitem = SimpleLazyObject(
-            lambda: get_menuitem_or_none(MenuItem, request.path))
+        def lazy_menuitem():
+            return get_menuitem_or_none(MenuItem, request.path)
 
-        request.ancestors = lazy(lambda: get_ancestors_for_request(request),
-                                 MP_NodeQuerySet)
-        request.descendants = lazy(lambda: get_descendants_for_request(request),  # noqa
-                                   MP_NodeQuerySet)
+        def lazy_ancestors_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_ancestors').relations
+
+        def lazy_descendants_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_descendants').relations
+
+        def lazy_siblings_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_siblings').relations
+
+        def lazy_children_func():
+            return get_relations_for_request(
+                model=MenuItem, request=request,
+                relation='get_children').relations
+
+        request.menuitem = SimpleLazyObject(lazy_menuitem)
+        request.ancestors = LengthLazyObject(lazy_ancestors_func)
+        request.descendants = LengthLazyObject(lazy_descendants_func)
+        request.siblings = LengthLazyObject(lazy_siblings_func)
+        request.children = LengthLazyObject(lazy_children_func)

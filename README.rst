@@ -38,6 +38,10 @@ These Python classes may then be used by the Django admin, or the bundled
 management command, to **import** the URL + Title into a tree hierarchy
 provided by `django-treebeard`_.
 
+
+Keeping menu classes in sync
+----------------------------
+
 To keep the python-written URIs up to date, the following are available:
 
   * a management command, ``python manage.py update_menus``
@@ -57,6 +61,33 @@ To keep the python-written URIs up to date, the following are available:
     to update ``MenuItem`` instances should the original model's
     ``get_absolute_url`` change, to keep the URL correct.
 
+
+Getting relations
+-----------------
+
+There is a middleware, ``menuhin.middleware.RequestTreeMiddleware`` which
+puts the following **lazy** attributes onto ``request``:
+
+ * ``request.menuitem`` - the ``MenuItem`` for the current request, or ``None``
+   if no suitable match was found.
+ * ``request.ancestors`` - any ``MenuItem`` instances further up the tree,
+   from ``request.menuitem`` based on the arrangement (in the admin, usually)
+ * ``request.descendants`` - all ``MenuItem`` instances below this one.
+ * ``request.siblings`` - all ``MenuItem`` instances adjacent to this one in
+   the tree. Includes itself, so there will always be one sibling, I think.
+ * ``request.children`` - only ``MenuItem`` instances one level directly
+   below this one.
+
+If you don't want the middleware, there are context processors too:
+
+ * ``menuhin.context_processors.request_ancestors`` exposes the context
+   variable ``MENUHIN_ANCESTORS``, which should contain the same as the
+   middleware's ``request.ancestors``
+ * ``menuhin.context_processors.request_descendants`` exposes the context
+   variable ``MENUHIN_DESCENDANTS``, which should contain the same as the
+   middleware's ``request.descendants``
+
+
 Dynamic titles
 --------------
 
@@ -75,13 +106,13 @@ Thus, both of the following are valid titles:
   * ``hello, {{ request.user|default:'anonymous' }}``
   * ``hello, {request.user}``
 
+
 Unfinished bits
 ---------------
 
 * No tests. There is a `test_project` though.
-* Lazy middleware needs improvement.
-* Lazy context processors need improvement.
 * Doesn't take querystrings into account yet.
+
 
 License
 -------
