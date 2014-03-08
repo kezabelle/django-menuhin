@@ -10,6 +10,20 @@
     <body>
     {% load menus %}
     <h1>Menus!</h1>
+    <h2>Middleware ...</h2>
+    <h3>Menu Item</h3>
+    {% parse_title request.menuitem %}
+    <h3>Ancestors</h3>
+    {% for ance in request.ancestors %}{% parse_title ance %}<br>{% empty %}none :({% endfor %}
+    <h3>Descendants</h3>
+    {% for desc in request.descendants %}{% parse_title desc %}<br>{% empty %}none :({% endfor %}
+    <hr>
+    <h2>Context processors</h2>
+    <h3>Ancestors</h3>
+    {% for ance in MENUHIN_ANCESTORS %}{% parse_title ance %}<br>{% empty %}none :({% endfor %}
+    <h3>Descendants</h3>
+    {% for desc in MENUHIN_DESCENDANTS %}{% parse_title desc %}<br>{% empty %}none :({% endfor %}
+    <hr>
     <h2>The <code>"default"</code> menu for this <code>Site</code></h2>
     {% show_menu %}
     <hr>
