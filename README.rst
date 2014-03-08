@@ -2,18 +2,13 @@
 django-menuhin
 ==============
 
-Another menu application for `Django`_.
+Another menu & breadcrumb application for `Django`_.
 
 Is it usable?
 -------------
 
-Nope, not entirely. There's a bunch of tests, and coverage is 100% excluding
-the template tags, but it's not ready for prime time.
+Nope, not entirely. I keep re-writing it.
 
-It's rough around the edges, both in API and functionality, but it is
-inherently lazy, and attempts to be efficient where possible - the biggest
-hits to the database are hopefully from the userland ``get_nodes()``
-implementations.
 
 What's the idea?
 ----------------
@@ -23,50 +18,54 @@ enough to allow for changes to come via client-input data.
 
 The idea in brief::
 
-    from menuhin.models import Menu, MenuNode
+    from menuhin.models import MenuItemGroup, URI
 
-    class MyMenu(Menu):
-        def get_nodes(self, request=None, parent_node=None):
-            yield MenuNode(title='master', url='/master/',
-                           unique_id='masternode')
-            # the following are all children of the above...
+    class MyMenu(MenuItemGroup):
+        def get_urls(self):
             for i in xrange(1, 10):
-                yield MenuNode(title=i, url='/example/%d/' % i,
-                               unique_id='example_%d' % i,
-                               parent_id='masternode')
-
-        class Meta:
-            proxy = True
-
-    from menuhin.models import CustomMenuItem
-    # the theory runs that this should replace the previous `master`
-    CustomMenuItem.objects.create(title='replacing the masternode',
-                                  url='/newmaster/',
-                                  unique_id='newmasternode',
-                                  position=CustomMenuItem.POSITIONS.replacing,
-                                  target_id='masternode',
-                                  menu_id='my-menu')
-
-    items = list(MyMenu.menus.all())
+                yield URI(title=i, url='/example/%d/' % i)
 
 That's it.
 
-Anything that is a proxy of ``Menu`` is autodiscovered and usable. Individual
-``MenuNode`` instances may be prepended and appended to, or replaced entirely.
+Discovery of menus is done by configuring a ``MENUHIN_MENU_HANDLERS`` setting,
+emulating the form of Django's ``MIDDLEWARE_CLASSES``::
 
-``Menu`` instances expose a vaguely ``QuerySet`` like API, with
-``Menu.menus.all()`` and ``Menu.menus.filter()``.
+  MENUHIN_MENU_HANDLERS = (
+    'myapp.mymenus.MyMenu',
+  )
 
-Nothing is cached, so assuming the context provided a ``request``, you can do
-per-request filtering of nodes at the earliest point in the menu's lifecycle.
+These Python classes may then be used by the Django admin, or the bundled
+management command, to **import** the URL + Title into a tree hierarchy
+provided by `django-treebeard`_.
 
-The future
-----------
+To keep the python-written URIs up to date, the following are available:
 
-* A decent Admin implementation.
-* Template tags that are correct.
-* Further exploration of attaching menus to other menus - hopefully without
-  ending up in a recursion loop.
+  * a management command, ``python manage.py update_menus``
+
+    * It accepts ``--site=N`` to target only a specific Django ``SITE_ID``
+    * It accepts ``--dry-run`` where no inserts will be done. Most useful
+      with ``--verbosity=2``
+
+  * The Django admin ``Menus`` tree view exposes a new **Import** page,
+    where one of the ``MENUHIN_MENU_HANDLERS`` may be selected, along
+    with a ``Site`` to apply it to.
+  * a **Post Save** signal handler (``menuhin.listeners.create_menu_url``)
+    to create a new ``MenuItem`` when the given instance is first created,
+    as long as the model has a ``get_absolute_url``, and optionally, a
+    ``get_menu_title`` or ``get_title`` method
+  * a **Pre Save** signal handler (``menuhin.listeners.update_old_url``)
+    to update ``MenuItem`` instances should the original model's
+    ``get_absolute_url`` change, to keep the URL correct.
+
+Unfinished bits
+---------------
+
+* No tests. There is a `test_project` though.
+* Lazy middleware needs improvement.
+* Lazy context processors need improvement.
+* Doesn't take querystrings into account yet.
+* Allowing the title to have ``{x}`` (python formatting) and ``{{ x }}``
+  (`Django`_ template formatting) isn't yet done in the templates.
 
 License
 -------
@@ -78,3 +77,4 @@ distribution for a complete copy.
 
 
 .. _Django: https://djangoproject.com/
+.. _django-treebeard: https://github.com/tabo/django-treebeard/
