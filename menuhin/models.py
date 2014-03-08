@@ -56,6 +56,13 @@ class MenuItem(TimeStampedModel, MP_Node):
     def __str__(self):
         return self.title
 
+    def __repr__(self):
+        return ('<{name}: title: {title}, published: {status!s}, uri: {uri}, '
+                'site_id: {site}>'.format(name=self.__class__.__name__,
+                                          title=self.title,
+                                          status=self.is_published,
+                                          uri=self.uri, site=self.site_id))
+
     def clean(self):
         if not self.menu_slug:
             self.menu_slug = set_menu_slug(self.uri, model=MenuItem)
