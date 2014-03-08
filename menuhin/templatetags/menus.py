@@ -101,10 +101,11 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
             menuitem = MenuItem.objects.get(**lookup)
         except MenuItem.DoesNotExist:
             return base
-        base.update(ancestor_nodes=menuitem.get_ancestors(),
+        base.update(ancestor_nodes=(menuitem.get_ancestors()
+                                    .filter(is_published=True)),
                     menu_node=menuitem,
-                    child_nodes=menuitem.get_children())
-
+                    child_nodes=menuitem.get_children().filter(
+                        is_published=True))
         return base
 
     def render_tag(self, context, **kwargs):
