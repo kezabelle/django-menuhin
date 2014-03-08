@@ -49,11 +49,6 @@ setup(
         'django-model-utils>=1.5',
         'django-classy-tags>=0.4',
     ],
-    tests_require=[
-        'django-setuptest>=0.1.4',
-        'model-mommy>=1.2',
-        'django-pdb>=0.3.2',
-    ],
     zip_safe=False,
     keywords='django menu',
     license="BSD License",
