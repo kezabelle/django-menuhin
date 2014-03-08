@@ -58,12 +58,12 @@ class ShowMenu(InclusionTag, AsTag):
                       'is_published': True}
         base.update(query=lookup)
         try:
-            menu_root = MenuItem.objects.get(**lookup)
+            menu_root = MenuItem.objects.select_related('site').get(**lookup)
         except MenuItem.DoesNotExist:
             return base
 
         annotated_menu = MenuItem.get_published_annotated_list(
-            parent=menu_root)
+            parent=menu_root, is_published=True, site=site)
 
         base.update(menu_root=menu_root,
                     menu_nodes=tuple(x for x in annotated_menu
@@ -113,14 +113,17 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         lookup.update(site=site, is_published=True)
         base.update(query=lookup)
         try:
-            menuitem = MenuItem.objects.get(**lookup)
+            menuitem = MenuItem.objects.select_related('site').get(**lookup)
         except MenuItem.DoesNotExist:
             return base
         base.update(ancestor_nodes=(menuitem.get_ancestors()
-                                    .filter(is_published=True)),
+                                    .select_related('site')
+                                    .filter(is_published=True, site=site)),
                     menu_node=menuitem,
-                    child_nodes=menuitem.get_children().filter(
-                        is_published=True))
+                    child_nodes=(menuitem.get_children()
+                                 .select_related('site')
+                                 .filter(is_published=True, site=site)),
+                    )
         return base
 
     def render_tag(self, context, **kwargs):

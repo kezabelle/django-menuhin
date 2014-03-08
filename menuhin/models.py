@@ -100,14 +100,15 @@ class MenuItem(TimeStampedModel, MP_Node):
         return self.title
 
     @classmethod
-    def get_published_annotated_list(cls, parent=None):
+    def get_published_annotated_list(cls, parent=None, **tree_kwargs):
         """
         copy paste job of the original `get_annotated_list` so that we can
         filter only published items, specifically for this.
         """
         result, info = [], {}
         start_depth, prev_depth = (None, None)
-        for node in cls.get_tree(parent).filter(is_published=True):
+        qs = cls.get_tree(parent).select_related('site').filter(**tree_kwargs)
+        for node in qs:
             depth = node.get_depth()
             if start_depth is None:
                 start_depth = depth
