@@ -102,21 +102,24 @@ class MenuItem(TimeStampedModel, MP_Node):
     @classmethod
     def get_published_annotated_list(cls, parent=None):
         """
-        Gets an annotated list from a tree branch.
-
-        :param parent:
-
-            The node whose descendants will be annotated. The node itself
-            will be included in the list. If not given, the entire tree
-            will be annotated.
+        copy paste job of the original `get_annotated_list` so that we can
+        filter only published items, specifically for this.
         """
-        result = super(MenuItem, cls).get_annotated_list(parent)
-        for base_result in result:
-            if base_result[0].is_published:
-                yield base_result
-            else:
-                yield base_result
-        # return result
+        result, info = [], {}
+        start_depth, prev_depth = (None, None)
+        for node in cls.get_tree(parent).filter(is_published=True):
+            depth = node.get_depth()
+            if start_depth is None:
+                start_depth = depth
+            open = (depth and (prev_depth is None or depth > prev_depth))
+            if prev_depth is not None and depth < prev_depth:
+                info['close'] = list(range(0, prev_depth - depth))
+            info = {'open': open, 'close': [], 'level': depth - start_depth}
+            result.append((node, info,))
+            prev_depth = depth
+        if start_depth and start_depth > 0:
+            info['close'] = list(range(0, prev_depth - start_depth + 1))
+        return result
 
     class Meta:
         verbose_name = menuitem_v
