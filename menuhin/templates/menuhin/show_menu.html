@@ -1,3 +1,4 @@
+{% load menus %}
 {% spaceless %}
 {% for node, node_metadata in menu_nodes %}
     {% if node_metadata.open %}
@@ -6,7 +7,7 @@
         </li>
     {% endif %}
     <li class="menu-item menu-item-level-{{ node_metadata.level }}{% if node.is_leaf %} menu-item-leaf{% endif %}{% if node.is_root %} menu-item-root{% endif %}" data-depth="{{ node.get_depth }}" data-created="{{ node.created|date:'c' }}">
-    <a href="{{ node.get_absolute_url }}" class="menu-link menu-link-level-{{ node_metadata.level }}">{{ node.title }}</a>
+    <a href="{{ node.get_absolute_url }}" class="menu-link menu-link-level-{{ node_metadata.level }}">{% if node.title_needs_parsing %}{% parse_title node %}{% else %}{{ node.title }}{% endif %}</a>
     {% for close in node_metadata.close %}
         </li></ul>
     {% endfor %}

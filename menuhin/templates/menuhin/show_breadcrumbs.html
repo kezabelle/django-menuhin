@@ -1,13 +1,14 @@
 {% if ancestor_nodes %}
+{% load menus %}
 <ol class="breadcrumbs">
     {% for ancestor in ancestor_nodes %}
         <li class="breadcrumbs-ancestor{% if forloop.first %} breadcrumbs-first{% endif %}{% if ancestor.is_leaf %} breadcrumbs-leaf{% endif %}{% if ancestor.is_root %} breadcrumbs-root{% endif %}" data-depth="{{ ancestor.get_depth }}" data-created="{{ ancestor.created|date:'c' }}">
-        <a href="{{ ancestor.get_absolute_url }}" class="breadcrumbs-ancestor-link">{{ ancestor.title }}</a>
+        <a href="{{ ancestor.get_absolute_url }}" class="breadcrumbs-ancestor-link">{% if ancestor.title_needs_parsing %}{% parse_title ancestor %}{% else %}{{ ancestor.title }}{% endif %}</a>
         </li>
     {% endfor %}
     {% if menu_node %}
         <li class="breadcrumbs-self breadcrumbs-last" data-depth="{{ menu_node.get_depth }}" data-created="{{ menu_node.created|date:'c' }}">
-        <a href="{{ menu_node.get_absolute_url }}" class="breadcrumbs-self-link">{{ menu_node.title }}</a>
+        <a href="{{ menu_node.get_absolute_url }}" class="breadcrumbs-self-link">{% if menu_node.title_needs_parsing %}{% parse_title menu_node %}{% else %}{{ menu_node.title }}{% endif %}</a>
         </li>
     {% endif %}
 </ol>

@@ -57,6 +57,24 @@ To keep the python-written URIs up to date, the following are available:
     to update ``MenuItem`` instances should the original model's
     ``get_absolute_url`` change, to keep the URL correct.
 
+Dynamic titles
+--------------
+
+If a stored title has ``{{ xyz }}`` in it when rendered by the template tags,
+the title will be parsed as if it were a Django template, using the
+``MenuItem`` field attributes as kwargs, plus ``request`` if it was in the
+parent context.
+
+If the stored title has ``{x}`` in it, and didn't have ``{{ abc }}`` in it,
+the title is parsed using the `Python string formatting DSL`_, such that
+every field attribute of the ``MenuItem`` is given as a kwarg, as is
+``request`` if it was in the parent context.
+
+Thus, both of the following are valid titles:
+
+  * ``hello, {{ request.user|default:'anonymous' }}``
+  * ``hello, {request.user}``
+
 Unfinished bits
 ---------------
 
@@ -64,8 +82,6 @@ Unfinished bits
 * Lazy middleware needs improvement.
 * Lazy context processors need improvement.
 * Doesn't take querystrings into account yet.
-* Allowing the title to have ``{x}`` (python formatting) and ``{{ x }}``
-  (`Django`_ template formatting) isn't yet done in the templates.
 
 License
 -------
@@ -78,3 +94,4 @@ distribution for a complete copy.
 
 .. _Django: https://djangoproject.com/
 .. _django-treebeard: https://github.com/tabo/django-treebeard/
+.. _Python string formatting DSL: http://docs.python.org/2/library/string.html#format-examples

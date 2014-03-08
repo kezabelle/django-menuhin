@@ -13,6 +13,19 @@ register = template.Library()
 logger = logging.getLogger(__name__)
 
 
+@register.simple_tag(takes_context=True)
+def parse_title(context, obj):
+    if not hasattr(obj, 'parsed_title'):
+        return ''
+
+    kwargs = dict((attr, getattr(obj, attr))
+                  for attr in obj._meta.get_all_field_names()
+                  if attr != 'title')
+    if 'request' in context:
+        kwargs.update(request=context['request'])
+    return obj.parsed_title(context=kwargs)
+
+
 class ShowMenu(InclusionTag, AsTag):
     template = 'menuhin/show_menu.html'
     name = "show_menu"
@@ -30,8 +43,9 @@ class ShowMenu(InclusionTag, AsTag):
             'to_depth': to_depth,
             'site': site,
             'template': template or self.template,
-            'request_in_context': 'request' in context,
         }
+        if 'request' in context:
+            base.update(request=context['request'])
 
         # if doing a PK lookup, given the PK is unique across any site, assume
         # the user knows wtf they're doing, so don't ask for only this site,
@@ -82,8 +96,9 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         base = {
             'site': site,
             'template': template or self.template,
-            'request_in_context': 'request' in context,
         }
+        if 'request' in context:
+            base.update(request=context['request'])
 
         # try to go by PK, or if there's no invalid characters (eg: /:_ ...)
         # by menu_slug, otherwise falling back to assuming the input is
