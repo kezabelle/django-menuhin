@@ -107,6 +107,84 @@ Thus, both of the following are valid titles:
   * ``hello, {request.user}``
 
 
+Usage in templates
+------------------
+
+A brief overview of the template tags available:
+
+show_breadcrumbs
+^^^^^^^^^^^^^^^^
+
+Requires a single argument, which is used to look up the ``MenuItem`` in
+question::
+
+  {% load menus %}
+  {% show_breadcrumbs request.path %}
+  {% show_breadcrumbs "my-slug" %}
+  {% show_breadcrumbs 4 %}
+
+* If the argument is all digits, it is presumed to be the **primary key**,
+  and is used as-is to fetch the ``MenuItem`` in question, along with
+  it's ancestors.
+* If the argument is a valid slug (that is, contains no characters invalid
+  for a ``SlugField``) it is treated as such, and is used in combination
+  with the current ``Site`` (based on the ``SITE_ID``) to fetch the
+  ``MenuItem`` in question, along with it's ancestors.
+* If the argument is neither of the above, it is presumed to be a URL,
+  and so is looked up by ``MenuItem`` path and the current ``Site`` (based
+  on the ``SITE_ID``) to fetch the ``MenuItem`` in question, along with
+  it's ancestors.
+
+The default template for showing breadcrumbs (
+``menuhin/show_breadcrumbs.html``) puts a whole bunch of CSS classes
+and data-* attributes on the HTML elements, so you can customise heavily.
+You can change the template used by providing a second argument pointing
+at your chosen file::
+
+  {% load menus %}
+  {% show_breadcrumbs request.path "a/b/c.html" %}
+
+The tag may also be used to promote a new context variable, which sidesteps the
+rendering process and ignores the template::
+
+  {% load menus %}
+  {% show_breadcrumbs request.path as breadcrumb_data %}
+  {% for node in breadcrumb_data.ancestor_nodes %}
+  {{ node }}
+  {% endfor %}
+
+
+show_menu
+^^^^^^^^^
+
+Takes a string representing a ``MenuItem`` slug and optionally a depth to
+descend to from the discovered ``MenuItem`` to display a tree::
+
+  {% load menus %}
+  {% show_menu "default" 10 %}
+
+Finds the ``MenuItem`` for the current ``Site`` which matches that slug,
+and outputs up to ten levels below it.
+
+The default template (``menuhin/show_menu.html``) for showing the menu puts
+a whole bunch of CSS classes and data-* attributes on the HTML elements, so
+you can customise heavily without needing to override it, though that is
+possible too::
+
+  {% load menus %}
+  {% show_menu "xyz" 100 "x/y/z.html" %}
+
+Like the ``show_breadcrumbs`` tag, ``show_menu`` may be used to create a new
+context variable containing the data otherwise provided to the included
+template::
+
+  {% load menus %}
+  {% show_menu ... as outvar %}
+  {{ outvar.menu_root }}
+  {% for x in outvar.menu_nodes %}
+  {{ x }}
+  {% endfor %}
+
 Unfinished bits
 ---------------
 
