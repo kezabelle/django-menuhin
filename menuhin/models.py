@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from collections import namedtuple
+from django.core.exceptions import ValidationError
 from django.template.loader import Template
 from django.template.context import Context
 from django.utils.encoding import python_2_unicode_compatible
@@ -22,7 +23,7 @@ from django.db.models import (SlugField, ForeignKey, CharField, TextField,
 # from model_utils.managers import PassThroughManager
 from model_utils.models import TimeStampedModel
 # from .querysets import MenuQuerySet
-from .utils import get_relations_for_request
+from .utils import get_relations_for_request, set_menu_slug
 # from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help,
@@ -31,10 +32,12 @@ from menuhin.text import (menu_v, menu_vp, title_label, title_help,
 
 logger = logging.getLogger(__name__)
 
+
 def is_valid_uri(value):
     if not value.startswith(('http://', 'https://', '//', '/', '../', './')):
         raise ValidationError('Invalid URL')
     return True
+
 
 @python_2_unicode_compatible
 class MenuItem(TimeStampedModel, MP_Node):
