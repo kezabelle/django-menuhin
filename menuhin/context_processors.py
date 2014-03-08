@@ -15,7 +15,7 @@ def request_ancestors(request):
 
 
 def request_descendants(request):
-    if hasattr(request, 'ancestors'):
+    if hasattr(request, 'descendants'):
         descendants = request.descendants
     else:
         descendants = lazy(
