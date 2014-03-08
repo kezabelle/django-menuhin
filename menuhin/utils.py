@@ -50,18 +50,26 @@ class RequestRelations(namedtuple('RequestRelations', ('relations', 'obj',
 
 def get_relations_for_request(model, request, relation):
     path = request.path
-    site = Site.objects.get_current()
-    try:
-        item = model.objects.filter(uri__iexact=path, site=site)[:1][0]
-    except IndexError:
-        return RequestRelations(relations=model.objects.none(), obj=None,
-                                requested=relation, path=path)
+    sentinel_error = RequestRelations(relations=model.objects.none(),
+                                      obj=None, requested=relation, path=path)
+
+    if hasattr(request, 'menuitem') and request.menuitem is not None:
+        item = request.menuitem
+    elif hasattr(request, 'menuitem') and request.menuitem is None:
+        # using the middleware, but we couldn't find a good match.
+        return sentinel_error
     else:
-        attr = getattr(item, relation)
-        while callable(attr):
-            attr = attr()
-        return RequestRelations(relations=attr, obj=item, requested=relation,
-                                path=path)
+        # not using the middleware
+        item = get_menuitem_or_none(model, request.path)
+        if item is None:
+            return sentinel_error
+
+    attr = getattr(item, relation)
+    while callable(attr):
+        attr = attr()
+    return RequestRelations(relations=attr.select_related('site'),
+                            obj=item, requested=relation,
+                            path=path)
 
 
 DefaultForSite = namedtuple('DefaultForSite', ('obj', 'created'))
@@ -87,6 +95,18 @@ def ensure_default_for_site(model, site_id=None):
         default_for_site_created.send(sender=ensure_default_for_site,
                                       site=site_id, instance=obj)
     return DefaultForSite(obj=obj, created=created)
+
+
+def get_menuitem_or_none(model, uri):
+    lookup = {'site': Site.objects.get_current(),
+              'uri__iexact': uri,
+              'is_published': True}
+    try:
+        return model.objects.select_related('site').filter(**lookup)[:1][0]
+    except IndexError:
+        # multiple things can exist with the same URI, so we ask for the first,
+        # best match, which may not exist, but won't raise DoesNotExist.
+        return None
 
 
 CollectedMenu = namedtuple('CollectedMenu', ('path', 'instance', 'name'))
