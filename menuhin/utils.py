@@ -10,7 +10,7 @@ except ImportError:  # pragma: no cover
 
 try:
     from django.utils.encoding import force_text
-except ImportError:
+except ImportError:  # pragma: no cover
     from django.utils.encoding import force_unicode as force_text
 
 from django.core.exceptions import ImproperlyConfigured
@@ -88,7 +88,7 @@ DefaultForSite = namedtuple('DefaultForSite', ('obj', 'created'))
 def ensure_default_for_site(model, site_id=None):
     if site_id is None:
         site_id = Site.objects.get_current()
-    kwargs = {'menu_slug': 'default', 'site_id': site_id}
+    kwargs = {'menu_slug': 'default', 'site': site_id}
     try:
         obj = model.objects.get(**kwargs)
         created = False
@@ -100,7 +100,6 @@ def ensure_default_for_site(model, site_id=None):
             'uri': '/',
         })
         obj = model.add_root(**kwargs)
-        obj = None
         created = True
         default_for_site_created.send(sender=ensure_default_for_site,
                                       site=site_id, instance=obj)
@@ -204,4 +203,7 @@ def update_all_urls(model, possible_urls, site_id=None):
 def set_menu_slug(uri, model=None):
     path, split, qs = uri.partition('?')
     menu_slug = slugify(force_text(path.replace('/', ' ')))
-    return menu_slug[:100]
+    max_length = 100
+    if model is not None:
+        max_length = model._meta.get_field_by_name('menu_slug')[0].max_length
+    return menu_slug[:max_length]
