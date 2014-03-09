@@ -185,6 +185,21 @@ template::
   {{ x }}
   {% endfor %}
 
+
+Sitemaps
+--------
+
+There's a ``menuhin.sitemaps.MenuItemSitemap`` which will output all
+**published** menu items for the current **site** (as set by the ``SITE_ID``)
+
+Assuming your menus cover most/all of your pages, it's an efficient way to
+provide the sitemap, though it can be improved by using
+`django-static-sitemaps`_.
+
+Published ``MenuItem`` instances in the sitemap get a lower priority the
+deeper into the tree they are, and the change frequency is dynamically set
+depending on how recently the ``MenuItem`` was last changed.
+
 Unfinished bits
 ---------------
 
@@ -204,3 +219,4 @@ distribution for a complete copy.
 .. _Django: https://djangoproject.com/
 .. _django-treebeard: https://github.com/tabo/django-treebeard/
 .. _Python string formatting DSL: http://docs.python.org/2/library/string.html#format-examples
+.. _django-static-sitemaps: https://github.com/xaralis/django-static-sitemaps

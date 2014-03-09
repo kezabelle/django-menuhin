@@ -20,6 +20,7 @@ d(
         "django.contrib.auth",
         "django.contrib.contenttypes",
         "django.contrib.staticfiles",
+        "django.contrib.sitemaps",
         "django.contrib.messages",
         "django.contrib.admin",
         "debug_toolbar",
@@ -81,11 +82,14 @@ d(
 
 from django.conf.urls import include
 import debug_toolbar
-
+from menuhin.sitemaps import MenuItemSitemap
+sitemaps = {'menuitems': MenuItemSitemap}
 d.urlpatterns += d.patterns('',
                             d.url(r'^debug_toolbar/',
                                   include(debug_toolbar.urls)),
-#                            d.url(r'^', include(patternatlas.urlconf)))
+                            d.url(r'^sitemap\.xml$',
+                                  'django.contrib.sitemaps.views.sitemap',
+                                  {'sitemaps': sitemaps}),
                             )
 d.add_view(r'^', include('test_app.urls'))
 

@@ -63,7 +63,7 @@ class ShowMenu(InclusionTag, AsTag):
             return base
 
         annotated_menu = MenuItem.get_published_annotated_list(
-            parent=menu_root, is_published=True, site=site)
+            parent=menu_root)
 
         base.update(menu_root=menu_root,
                     menu_nodes=tuple(x for x in annotated_menu

@@ -20,6 +20,7 @@ except ImportError:  # pragma: no cover (Django < 1.7)
 from treebeard.mp_tree import MP_Node
 from django.db.models import (SlugField, ForeignKey, CharField, TextField,
                               BooleanField)
+from django.contrib.sites.models import Site
 # from model_utils.managers import PassThroughManager
 from model_utils.models import TimeStampedModel
 # from .querysets import MenuQuerySet
@@ -107,6 +108,10 @@ class MenuItem(TimeStampedModel, MP_Node):
         """
         result, info = [], {}
         start_depth, prev_depth = (None, None)
+        if 'site' not in tree_kwargs:
+            tree_kwargs.update(site=Site.objects.get_current())
+        if 'is_published' not in tree_kwargs:
+            tree_kwargs.update(is_published=True)
         qs = cls.get_tree(parent).select_related('site').filter(**tree_kwargs)
         for node in qs:
             depth = node.get_depth()
