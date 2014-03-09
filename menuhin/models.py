@@ -9,7 +9,7 @@ try:
     from django.utils.six.moves import urllib_parse
     urlsplit = urllib_parse.urlsplit
     urlunsplit = urllib_parse.urlunsplit
-except (ImportError, AttributeError) as e:  # Python 2, < Django 1.5
+except (ImportError, AttributeError) as e:  # pragma: no cover Python 2, < Django 1.5
     from urlparse import urlsplit, urlunsplit
 
 try:
