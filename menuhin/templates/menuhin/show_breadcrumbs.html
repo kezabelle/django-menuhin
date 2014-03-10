@@ -7,7 +7,7 @@
         </li>
     {% endfor %}
     {% if menu_node %}
-        <li class="breadcrumbs-self breadcrumbs-last" data-depth="{{ menu_node.get_depth }}" data-created="{{ menu_node.created|date:'c' }}">
+        <li class="breadcrumbs-self breadcrumbs-last{% if menu_node.is_active %} breadcrumb-selected{% endif %}" data-depth="{{ menu_node.get_depth }}" data-created="{{ menu_node.created|date:'c' }}">
         <a href="{{ menu_node.get_absolute_url }}" class="breadcrumbs-self-link">{% if menu_node.title_needs_parsing %}{% parse_title menu_node %}{% else %}{{ menu_node.title }}{% endif %}</a>
         </li>
     {% endif %}

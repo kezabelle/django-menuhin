@@ -5,6 +5,7 @@ from classytags.core import Options
 from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
 from menuhin.models import MenuItem
+from menuhin.utils import marked_annotated_list
 from django import template
 from django.core.validators import slug_re
 
@@ -64,10 +65,18 @@ class ShowMenu(InclusionTag, AsTag):
 
         annotated_menu = MenuItem.get_published_annotated_list(
             parent=menu_root)
+        depth_filtered_menu = tuple(x for x in annotated_menu
+                                    if x[1]['level'] <= to_depth)
+
+        if 'request' in context:
+            marked_annotated_menu = marked_annotated_list(
+                request=context['request'],
+                tree=depth_filtered_menu)
+        else:
+            marked_annotated_menu = depth_filtered_menu
 
         base.update(menu_root=menu_root,
-                    menu_nodes=tuple(x for x in annotated_menu
-                                     if x[1]['level'] <= to_depth))
+                    menu_nodes=marked_annotated_menu)
         return base
 
     def render_tag(self, context, **kwargs):
@@ -116,14 +125,27 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
             menuitem = MenuItem.objects.select_related('site').get(**lookup)
         except MenuItem.DoesNotExist:
             return base
-        base.update(ancestor_nodes=(menuitem.get_ancestors()
-                                    .select_related('site')
-                                    .filter(is_published=True, site=site)),
+        menuitem.is_active = True
+
+        def marked_ancestors():
+            ancestors = (menuitem.get_ancestors()
+                         .select_related('site')
+                         .filter(is_published=True, site=site))
+            for ancestor in ancestors:
+                ancestor.is_ancestor = True
+                yield ancestor
+
+        def marked_children():
+            children = (menuitem.get_children()
+                        .select_related('site')
+                        .filter(is_published=True, site=site))
+            for child in children:
+                child.is_descendant = True
+                yield child
+
+        base.update(ancestor_nodes=tuple(marked_ancestors()),
                     menu_node=menuitem,
-                    child_nodes=(menuitem.get_children()
-                                 .select_related('site')
-                                 .filter(is_published=True, site=site)),
-                    )
+                    child_nodes=tuple(marked_children()))
         return base
 
     def render_tag(self, context, **kwargs):

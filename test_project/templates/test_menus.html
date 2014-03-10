@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html class="no-js">
+{% load i18n %}
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <title></title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style type="text/css">
+        .menu-item-ancestor > a:after,
+        .breadcrumbs-ancestor > a:after {
+            content: " ({% trans "Ancestor" %})";
+        }
+        .menu-item-sibling > a:after {
+            content: " ({% trans "Sibling" %})";
+        }
+        .menu-item-selected > a:after,
+        .breadcrumb-selected > a:after {
+            content: " ({% trans "Selected" %})";
+        }
+        .menu-item-descendant > a:after {
+            content: " ({% trans "Descendant" %})";
+        }
+        </style>
     </head>
     <body>
     {% load menus %}

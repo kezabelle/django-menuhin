@@ -50,6 +50,10 @@ class MenuItem(TimeStampedModel, MP_Node):
                       help_text=display_title_help)
     uri = TextField(validators=[is_valid_uri])
     is_published = BooleanField(default=False, db_index=True)
+    is_active = False
+    is_ancestor = False
+    is_descendant = False
+    is_sibling = False
     # objects = TreePageManager()
     # node_order_by = ('path', 'depth')
 

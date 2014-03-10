@@ -207,3 +207,26 @@ def set_menu_slug(uri, model=None):
     if model is not None:
         max_length = model._meta.get_field_by_name('menu_slug')[0].max_length
     return menu_slug[:max_length]
+
+
+def marked_annotated_list(request, tree):
+    """
+    Mark up the tree objects with
+    """
+    current_node = None
+    # first we need to find the active one, in a separate loop :|
+    for tree_node, tree_info in tree:
+        if request.path == tree_node.uri:
+            tree_node.is_active = True
+            current_node = tree_node
+
+    if current_node is None:
+        return tree
+
+    for tree_node, tree_info in tree:
+        tree_node.is_descendant = tree_node.is_descendant_of(current_node)
+        tree_node.is_sibling = (tree_node.is_sibling_of(current_node) and
+                                tree_node != current_node)
+        # there is no is_ancestor_of, so we can invert it.
+        tree_node.is_ancestor = current_node.is_descendant_of(tree_node)
+    return tree
