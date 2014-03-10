@@ -44,22 +44,25 @@ Keeping menu classes in sync
 
 To keep the python-written URIs up to date, the following are available:
 
-  * a management command, ``python manage.py update_menus``
+* a management command, ``python manage.py update_menus``
 
-    * It accepts ``--site=N`` to target only a specific Django ``SITE_ID``
-    * It accepts ``--dry-run`` where no inserts will be done. Most useful
-      with ``--verbosity=2``
+  * It accepts ``--site=N`` to target only a specific Django ``SITE_ID``
+  * It accepts ``--dry-run`` where no inserts will be done. Most useful
+    with ``--verbosity=2``
 
-  * The Django admin ``Menus`` tree view exposes a new **Import** page,
-    where one of the ``MENUHIN_MENU_HANDLERS`` may be selected, along
-    with a ``Site`` to apply it to.
-  * a **Post Save** signal handler (``menuhin.listeners.create_menu_url``)
-    to create a new ``MenuItem`` when the given instance is first created,
-    as long as the model has a ``get_absolute_url``, and optionally, a
-    ``get_menu_title`` or ``get_title`` method
-  * a **Pre Save** signal handler (``menuhin.listeners.update_old_url``)
-    to update ``MenuItem`` instances should the original model's
-    ``get_absolute_url`` change, to keep the URL correct.
+* The Django admin ``Menus`` tree view exposes a new **Import** page,
+  where one of the ``MENUHIN_MENU_HANDLERS`` may be selected, along
+  with a ``Site`` to apply it to.
+* a **Post Save** signal handler (``menuhin.listeners.create_menu_url``)
+  to create a new ``MenuItem`` when the given instance is first created,
+  as long as the model has a ``get_absolute_url``, and optionally, a
+  ``get_menu_title`` or ``get_title`` method
+* a **Pre Save** signal handler (``menuhin.listeners.update_old_url``)
+  to update ``MenuItem`` instances should the original model's
+  ``get_absolute_url`` change, to keep the URL correct.
+* a **Pre Delete** signal handler (``menuhin.listeners.unpublish_on_delete``)
+  for quietly removing menu items which represent URLs that can no longer
+  exist because they've been deleted.
 
 
 Getting relations
@@ -68,24 +71,24 @@ Getting relations
 There is a middleware, ``menuhin.middleware.RequestTreeMiddleware`` which
 puts the following **lazy** attributes onto ``request``:
 
- * ``request.menuitem`` - the ``MenuItem`` for the current request, or ``None``
-   if no suitable match was found.
- * ``request.ancestors`` - any ``MenuItem`` instances further up the tree,
-   from ``request.menuitem`` based on the arrangement (in the admin, usually)
- * ``request.descendants`` - all ``MenuItem`` instances below this one.
- * ``request.siblings`` - all ``MenuItem`` instances adjacent to this one in
-   the tree. Includes itself, so there will always be one sibling, I think.
- * ``request.children`` - only ``MenuItem`` instances one level directly
-   below this one.
+* ``request.menuitem`` - the ``MenuItem`` for the current request, or ``None``
+  if no suitable match was found.
+* ``request.ancestors`` - any ``MenuItem`` instances further up the tree,
+  from ``request.menuitem`` based on the arrangement (in the admin, usually)
+* ``request.descendants`` - all ``MenuItem`` instances below this one.
+* ``request.siblings`` - all ``MenuItem`` instances adjacent to this one in
+  the tree. Includes itself, so there will always be one sibling, I think.
+* ``request.children`` - only ``MenuItem`` instances one level directly
+  below this one.
 
 If you don't want the middleware, there are context processors too:
 
- * ``menuhin.context_processors.request_ancestors`` exposes the context
-   variable ``MENUHIN_ANCESTORS``, which should contain the same as the
-   middleware's ``request.ancestors``
- * ``menuhin.context_processors.request_descendants`` exposes the context
-   variable ``MENUHIN_DESCENDANTS``, which should contain the same as the
-   middleware's ``request.descendants``
+* ``menuhin.context_processors.request_ancestors`` exposes the context
+  variable ``MENUHIN_ANCESTORS``, which should contain the same as the
+  middleware's ``request.ancestors``
+* ``menuhin.context_processors.request_descendants`` exposes the context
+  variable ``MENUHIN_DESCENDANTS``, which should contain the same as the
+  middleware's ``request.descendants``
 
 
 Dynamic titles
@@ -103,8 +106,8 @@ every field attribute of the ``MenuItem`` is given as a kwarg, as is
 
 Thus, both of the following are valid titles:
 
-  * ``hello, {{ request.user|default:'anonymous' }}``
-  * ``hello, {request.user}``
+* ``hello, {{ request.user|default:'anonymous' }}``
+* ``hello, {request.user}``
 
 
 Usage in templates

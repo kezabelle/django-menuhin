@@ -2,7 +2,7 @@ try:
     from django.utils.encoding import force_text
 except ImportError:
     from django.utils.encoding import force_unicode as force_text
-from django.conf import settings
+from django.contrib.sites.models import Site
 from .models import MenuItem, URI
 from .utils import update_all_urls
 
@@ -48,6 +48,17 @@ def update_old_url(sender, instance, created, **kwargs):
     if old_url == new_url:
         return None
 
-    filter_by = {'uri__iexact': old_url, 'site_id': settings.SITE_ID}
+    filter_by = {'uri__iexact': old_url, 'site': Site.objects.get_current()}
     update_on = {'uri': new_url}
     return MenuItem.objects.filter(**filter_by).update(**update_on)
+
+
+def unpublish_on_delete(sender, instance, **kwargs):
+    """
+    pre_delete signal to unpublish given menu items.
+    """
+    if not hasattr(instance, 'get_absolute_url'):
+        return None
+    old_url = instance.get_absolute_url()
+    filter_by = {'uri__iexact': old_url, 'site': Site.objects.get_current()}
+    return MenuItem.objects.filter(**filter_by).update(is_published=False)
