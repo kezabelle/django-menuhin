@@ -166,13 +166,15 @@ def find_missing(model, urls, site_id=None):
     if site_id is None:
         site_id = Site.objects.get_current()
 
-    paths = reduce(or_, (Q(uri__iexact=x.path) for x in urls))
-    url_count = len(paths)
+    url_count = len(urls)
     if url_count == 0:
         return None
+
+    paths = reduce(or_, (Q(uri__iexact=x.path) for x in urls))
     existing = frozenset(
         model.objects.filter(paths).filter(site_id=site_id)
         .values_list('uri', flat=True))
+
     found_count = len(existing)
     if found_count < url_count:
         return (x for x in urls if x.path not in existing)

@@ -5,10 +5,10 @@ except ImportError:
 from django.test import TestCase as TestCaseWithDB
 from django.test.utils import override_settings
 from django.contrib.sites.models import Site
-from menuhin.models import MenuItem
+from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
-                           RequestRelations)
+                           RequestRelations, find_missing)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -108,3 +108,27 @@ class RequestRelationsMethodsTestCase(TestCase):
                                requested='fake_method', path='/')
         self.assertFalse(rel)
 
+
+class FindMissingTestCase(TestCaseWithDB):
+    def get_urls(self, *a, **kw):
+        yield URI(title='a', path='/a/')
+        yield URI(title='a-b', path='/a/b/')
+        yield URI(title='a-b-c', path='/a/c/')
+
+    def test_site_id_is_not_none(self):
+        othersite = Site(domain='x.com', name='y.com')
+        othersite.full_clean()
+        othersite.save()
+        urls = set(self.get_urls())
+        result = find_missing(MenuItem, urls=urls, site_id=othersite)
+        self.assertEqual(set(result), urls)
+
+    def test_no_urls(self):
+        self.assertIsNone(find_missing(MenuItem, urls=()))
+
+    def test_none_missing(self):
+        urls = set(self.get_urls())
+        for x in urls:
+            MenuItem.add_root(uri=x.path, title=x.title,
+                              site_id=Site.objects.get_current().pk)
+        self.assertIsNone(find_missing(MenuItem, urls=urls))
