@@ -4,11 +4,14 @@ except ImportError:
     from django.utils.unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from django.test.utils import override_settings
+from django.test.client import RequestFactory
 from django.contrib.sites.models import Site
+from django.db.models.query import EmptyQuerySet
 from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
-                           RequestRelations, find_missing)
+                           RequestRelations, find_missing,
+                           get_relations_for_request)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -132,3 +135,38 @@ class FindMissingTestCase(TestCaseWithDB):
             MenuItem.add_root(uri=x.path, title=x.title,
                               site_id=Site.objects.get_current().pk)
         self.assertIsNone(find_missing(MenuItem, urls=urls))
+
+
+class GetRelationsForRequestTestCase(TestCaseWithDB):
+    def test_middleware_is_not_none(self):
+        rf = RequestFactory()
+        req = rf.get('/a/b/c/')
+        req.menuitem = MenuItem(path='/a/b/c/', title='yay',
+                                is_published=True,
+                                site_id=Site.objects.get_current().pk)
+        results = get_relations_for_request(model=MenuItem, request=req,
+                                            relation='get_ancestors')
+        self.assertEqual(req.menuitem, results.obj)
+
+    def test_middleware_is_not_none_but_is_falsy(self):
+        rf = RequestFactory()
+        req = rf.get('/a/b/c/')
+        req.menuitem = False
+        results = get_relations_for_request(model=MenuItem, request=req,
+                                            relation='get_ancestors')
+        self.assertIsNone(results.obj)
+
+    def test_middleware_is_none(self):
+        rf = RequestFactory()
+        req = rf.get('/a/b/c/')
+        req.menuitem = None
+        results = get_relations_for_request(model=MenuItem, request=req,
+                                            relation='get_ancestors')
+        self.assertIsNone(results.obj)
+
+    def test_no_middleware_found(self):
+        rf = RequestFactory()
+        req = rf.get('/a/b/c/')
+        results = get_relations_for_request(model=MenuItem, request=req,
+                                            relation='get_ancestors')
+        self.assertIsNone(results.obj)
