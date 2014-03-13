@@ -7,7 +7,8 @@ from django.test.utils import override_settings
 from django.contrib.sites.models import Site
 from menuhin.models import MenuItem
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
-                           get_menuitem_or_none, set_menu_slug)
+                           get_menuitem_or_none, set_menu_slug,
+                           RequestRelations)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -64,3 +65,46 @@ class SetMenuSlugTestCase(TestCase):
     def test_max_length(self):
         ms = set_menu_slug('/a/' * 100, model=MenuItem)
         self.assertEqual('a-' * 50, ms)
+
+
+class RequestRelationsMethodsTestCase(TestCase):
+    def test_has_relations(self):
+        rel = RequestRelations(relations=(1, 2), obj=None,
+                               requested='fake_method', path='/')
+        self.assertTrue(rel.has_relations())
+
+    def test_has_no_relations(self):
+        rel = RequestRelations(relations=(), obj=None,
+                               requested='fake_method', path='/')
+        self.assertFalse(rel.has_relations())
+
+    def test_found_instance(self):
+        rel = RequestRelations(relations=(), obj=MenuItem(),
+                               requested='fake_method', path='/')
+        self.assertTrue(rel.found_instance())
+
+    def test_found_no_instance(self):
+        rel = RequestRelations(relations=(), obj=None,
+                               requested='fake_method', path='/')
+        self.assertFalse(rel.found_instance())
+
+    def test_contains(self):
+        rel = RequestRelations(relations=(1, 2), obj=None,
+                               requested='fake_method', path='/')
+        self.assertIn(2, rel)
+
+    def test_does_not_contain(self):
+        rel = RequestRelations(relations=(1, 2), obj=None,
+                               requested='fake_method', path='/')
+        self.assertNotIn(3, rel)
+
+    def test_bool_true(self):
+        rel = RequestRelations(relations=(1, 2), obj=1,
+                               requested='fake_method', path='/')
+        self.assertTrue(rel)
+
+    def test_bool_false(self):
+        rel = RequestRelations(relations=(1, 2), obj=None,
+                               requested='fake_method', path='/')
+        self.assertFalse(rel)
+
