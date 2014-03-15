@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 try:
     from unittest import TestCase
 except ImportError:
@@ -9,32 +8,14 @@ from django.test.utils import override_settings
 from django.contrib.sites.models import Site
 from menuhin.models import MenuItem
 from menuhin.middleware import RequestTreeMiddleware
+from .data import get_bulk_data
 
 
 class RequestTreeMiddlewareTestCase(TestCaseWithDB):
     def setUp(self):
         self.rf = RequestFactory()
         self.mw = RequestTreeMiddleware()
-        self.site = Site.objects.get_current().pk
-        site = self.site
-        BASE_DATA = [
-            {'data': {'title': '1', 'site': site, 'uri': '/', 'is_published': True}},
-            {'data': {'title': '2', 'site': site, 'uri': '/a/', 'is_published': True}, 'children': [
-                {'data': {'title': '21', 'site': site, 'uri': '/a/b/c/', 'is_published': True}},
-                {'data': {'title': '22', 'site': site, 'uri': '/d/', 'is_published': True}},
-                {'data': {'title': '23', 'site': site, 'uri': '/e', 'is_published': True}, 'children': [
-                    {'data': {'title': '231', 'site': site, 'uri': '/HI',
-                    'is_published': True}},
-                ]},
-                {'data': {'title': '24', 'site': site, 'uri': '/x/', 'is_published': True}},
-            ]},
-            {'data': {'title': '3', 'site': site, 'uri': '/sup', 'is_published': True}},
-            {'data': {'title': '4', 'site': site, 'uri': '/yo', 'is_published': True}, 'children': [
-                {'data': {'title': '41', 'site': site, 'uri': '/hotdog/',
-                'is_published': True}},
-            ]},
-        ]
-        MenuItem.load_bulk(BASE_DATA)
+        MenuItem.load_bulk(get_bulk_data())
 
     @override_settings(MEDIA_URL='/a/b/c/', STATIC_URL='/b/')
     def test_is_ignored(self):

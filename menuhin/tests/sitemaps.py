@@ -7,27 +7,11 @@ from django.test import TestCase as TestCaseWithDB
 from django.contrib.sites.models import Site
 from menuhin.models import MenuItem
 from menuhin.sitemaps import MenuItemSitemap
-
+from .data import get_bulk_data
 
 class SitemapTestCase(TestCaseWithDB):
     def setUp(self):
-        site = Site.objects.get_current().pk
-        BASE_DATA = [
-            {'data': {'title': '1', 'site': site, 'is_published': True}},
-            {'data': {'title': '2', 'site': site, 'is_published': True}, 'children': [
-                {'data': {'title': '21', 'site': site, 'is_published': True}},
-                {'data': {'title': '22', 'site': site, 'is_published': True}},
-                {'data': {'title': '23', 'site': site, 'is_published': True}, 'children': [
-                    {'data': {'title': '231', 'site': site, 'is_published': True}},
-                ]},
-                {'data': {'title': '24', 'site': site, 'is_published': True}},
-            ]},
-            {'data': {'title': '3', 'site': site, 'is_published': True}},
-            {'data': {'title': '4', 'site': site, 'is_published': True}, 'children': [
-                {'data': {'title': '41', 'site': site, 'is_published': True}},
-            ]},
-        ]
-        MenuItem.load_bulk(BASE_DATA)
+        MenuItem.load_bulk(get_bulk_data())
 
     def test_priority(self):
         sitemap = MenuItemSitemap()
