@@ -10,9 +10,9 @@ from django.db.models.query import EmptyQuerySet
 from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
-                           RequestRelations, find_missing,
+                           RequestRelations, find_missing, add_urls,
                            get_relations_for_request, change_published_status,
-                           marked_annotated_list)
+                           marked_annotated_list, MenuItemURI)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -136,6 +136,42 @@ class FindMissingTestCase(TestCaseWithDB):
             MenuItem.add_root(uri=x.path, title=x.title,
                               site_id=Site.objects.get_current().pk)
         self.assertIsNone(find_missing(MenuItem, urls=urls))
+
+
+class AddUrlsTestCase(TestCaseWithDB):
+    def get_urls(self, *a, **kw):
+        yield URI(title='z', path='/xx/')
+        yield URI(title='zz', path='/xx/x/')
+        yield URI(title='zzz', path='/xx/x/xx/')
+
+    def test_site_id_is_not_none(self):
+        othersite = Site(domain='x.com', name='y.com')
+        othersite.full_clean()
+        othersite.save()
+        urls = set(self.get_urls())
+        result = tuple(add_urls(MenuItem, urls=urls, site_id=othersite.pk))
+        self.assertEqual(len(result), 3)
+        returned_uris = [x.uri for x in result]
+        self.assertEqual(set(returned_uris), urls)
+        for x in result:
+            self.assertIsInstance(x, MenuItemURI)
+            self.assertIsInstance(x.instance, MenuItem)
+            self.assertEqual(x.instance.uri, x.uri.path)
+
+    def test_site_id_is_none(self):
+        urls = set(self.get_urls())
+        result = tuple(add_urls(MenuItem, urls=urls))
+        self.assertEqual(len(result), 3)
+        returned_uris = [x.uri for x in result]
+        self.assertEqual(set(returned_uris), urls)
+        for x in result:
+            self.assertIsInstance(x, MenuItemURI)
+            self.assertIsInstance(x.instance, MenuItem)
+            self.assertEqual(x.instance.uri, x.uri.path)
+
+    def test_nothing_given_to_yield_back(self):
+        result = tuple(add_urls(MenuItem, urls=()))
+        self.assertEqual(len(result), 0)
 
 
 class GetRelationsForRequestTestCase(TestCaseWithDB):

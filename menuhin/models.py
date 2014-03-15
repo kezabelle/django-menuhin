@@ -62,7 +62,7 @@ class MenuItem(TimeStampedModel, MP_Node):
     #                         title=self.title, uri=self.uri)
 
     def __str__(self):
-        return self.title
+        return self.title  # pragma: no cover
 
     def __repr__(self):
         return ('<{name}: title: {title}, published: {status!s}, uri: {uri}, '

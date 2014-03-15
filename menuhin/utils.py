@@ -187,7 +187,7 @@ MenuItemURI = namedtuple('MenuItemURI', ('instance', 'uri'))
 
 def add_urls(model, urls, site_id=None):
     if site_id is None:
-        site_id = Site.objects.get_current()
+        site_id = Site.objects.get_current().pk
     for url in urls:
         instance = model.add_root(uri=url.path, is_published=False,
                                   title=url.title, site_id=site_id,
@@ -196,9 +196,9 @@ def add_urls(model, urls, site_id=None):
 
 
 def update_all_urls(model, possible_urls, site_id=None):
-    missing_urls = find_missing(model, urls=possible_urls)
+    missing_urls = find_missing(model, urls=possible_urls, site_id=site_id)
     if missing_urls is not None:
-        return add_urls(model, urls=tuple(missing_urls))
+        return add_urls(model, urls=tuple(missing_urls), site_id=site_id)
     return None
 
 
