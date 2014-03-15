@@ -25,7 +25,7 @@ def request_descendants(request):
             return get_relations_for_request(
                 model=MenuItem, request=request,
                 relation='get_descendants').relations
-        descendants = LengthLazyObject(request_descendants)
+        descendants = LengthLazyObject(lazy_descendants_func)
     return {
         'MENUHIN_DESCENDANTS': descendants
     }
