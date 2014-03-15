@@ -2,12 +2,16 @@
 import logging
 from django.contrib.sites.models import Site
 from classytags.core import Options
-from classytags.arguments import Argument
+from classytags.arguments import Argument, StringArgument
 from classytags.helpers import InclusionTag, AsTag
 from menuhin.models import MenuItem
 from menuhin.utils import marked_annotated_list
 from django import template
 from django.core.validators import slug_re
+try:
+    from django.utils.encoding import force_text
+except ImportError:  # pragma: no cover
+    from django.utils.encoding import force_unicode as force_text
 
 
 register = template.Library()
@@ -95,7 +99,8 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
     template = 'menuhin/show_breadcrumbs.html'
     name = "show_breadcrumbs"
     options = Options(
-        Argument('path_or_menuslug', required=True, resolve=True),
+        Argument('path_or_menuslug', required=False, default='',
+                 resolve=True),
         Argument('template', required=False, resolve=True, default=None),
         'as', Argument('var', required=False, default=None, resolve=False)
     )
@@ -109,6 +114,7 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         if 'request' in context:
             base.update(request=context['request'])
 
+        path_or_menuslug = force_text(path_or_menuslug)
         # try to go by PK, or if there's no invalid characters (eg: /:_ ...)
         # by menu_slug, otherwise falling back to assuming the input is
         # request.path or whatevers.
@@ -116,8 +122,12 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
             lookup = {'pk': int(path_or_menuslug)}
         elif slug_re.search(path_or_menuslug):
             lookup = {'menu_slug': path_or_menuslug}
-        else:
+        elif len(path_or_menuslug) > 0:
             lookup = {'uri__iexact': path_or_menuslug}
+        elif 'request' in context:
+            lookup = {'uri__iexact': context['request'].path}
+        else:
+            return base
 
         lookup.update(site=site, is_published=True)
         base.update(query=lookup)

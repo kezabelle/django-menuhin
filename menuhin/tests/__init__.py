@@ -6,7 +6,7 @@ from .models import *
 # from .forms import *
 # from .signals import *
 from .sitemaps import *
-# from .templatetags import *
+from .templatetags import *
 # from .views import *
 
 try:
