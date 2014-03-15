@@ -1,6 +1,7 @@
 from django.test import TestCase as TestCaseUsingDB
 from django.test.client import RequestFactory
 from django.template import Template, Context
+from django.contrib.sites.models import Site
 from menuhin.models import MenuItem
 from .data import get_bulk_data
 
@@ -101,3 +102,43 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
         context = Context()
         rendered = template.render(context).strip()
         self.assertEqual(rendered, '')
+
+
+class ParseTitleTestCase(TestCaseUsingDB):
+    def setUp(self):
+        MenuItem.load_bulk(get_bulk_data())
+
+    def test_has_no_parsed_title_attr(self):
+        template = Template('''
+        {% load menus %}
+        {% parse_title None %}
+        ''')
+        context = Context()
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, '')
+
+    def test_parse_title_no_request(self):
+        template = Template('''
+        {% load menus %}
+        {% parse_title testobj %}
+        ''')
+        context = Context({
+            'testobj': MenuItem(title='xxx {site}',
+                                site=Site.objects.get_current())
+        })
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, 'xxx example.com')
+
+
+    def test_parse_title_with_request(self):
+        template = Template('''
+        {% load menus %}
+        {% parse_title testobj %}
+        ''')
+        context = Context({
+            'testobj': MenuItem(title='xxx {{ request.path|default:"zzz" }}',
+                                site=Site.objects.get_current()),
+            'request': RequestFactory().get('/wheeee/')
+        })
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, 'xxx /wheeee/')
