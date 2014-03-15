@@ -11,7 +11,7 @@ from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
                            RequestRelations, find_missing,
-                           get_relations_for_request)
+                           get_relations_for_request, change_published_status)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -170,3 +170,16 @@ class GetRelationsForRequestTestCase(TestCaseWithDB):
         results = get_relations_for_request(model=MenuItem, request=req,
                                             relation='get_ancestors')
         self.assertIsNone(results.obj)
+
+
+class ChangePublishedStatusTestCase(TestCaseWithDB):
+    def test_usage(self):
+        MenuItem.add_root(title='x', is_published=True,
+                          site=Site.objects.get_current())
+        MenuItem.add_root(title='y', is_published=False,
+                          site=Site.objects.get_current())
+        with self.assertNumQueries(4):
+            change_published_status(queryset=MenuItem.objects.all(),
+                                    modeladmin=None, request=None)
+        self.assertFalse(MenuItem.objects.get(title='x').is_published)
+        self.assertTrue(MenuItem.objects.get(title='y').is_published)
