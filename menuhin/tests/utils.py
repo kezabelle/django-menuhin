@@ -12,7 +12,7 @@ from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
                            RequestRelations, find_missing, add_urls,
                            get_relations_for_request, change_published_status,
-                           marked_annotated_list, MenuItemURI)
+                           marked_annotated_list, MenuItemURI, update_all_urls)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -172,6 +172,27 @@ class AddUrlsTestCase(TestCaseWithDB):
     def test_nothing_given_to_yield_back(self):
         result = tuple(add_urls(MenuItem, urls=()))
         self.assertEqual(len(result), 0)
+
+
+class UpdateAllUrlsTestCase(TestCaseWithDB):
+    def get_urls(self, *a, **kw):
+        yield URI(title='z', path='/xx/')
+        yield URI(title='zz', path='/xx/x/')
+        yield URI(title='zzz', path='/xx/x/xx/')
+
+    def test_needed_inserting(self):
+        urls = set(self.get_urls())
+        result = update_all_urls(model=MenuItem, possible_urls=urls)
+        self.assertIsNotNone(result)
+        results = tuple(result)
+        self.assertEqual(len(results), 3)
+
+    def test_didnt_need_inserting(self):
+        # do the inserts ...
+        self.test_needed_inserting()
+        urls = set(self.get_urls())
+        result = update_all_urls(model=MenuItem, possible_urls=urls)
+        self.assertIsNone(result)
 
 
 class GetRelationsForRequestTestCase(TestCaseWithDB):
