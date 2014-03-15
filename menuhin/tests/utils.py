@@ -11,7 +11,8 @@ from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
                            RequestRelations, find_missing,
-                           get_relations_for_request, change_published_status)
+                           get_relations_for_request, change_published_status,
+                           marked_annotated_list)
 
 
 class EnsureDefaultTestCase(TestCaseWithDB):
@@ -183,3 +184,95 @@ class ChangePublishedStatusTestCase(TestCaseWithDB):
                                     modeladmin=None, request=None)
         self.assertFalse(MenuItem.objects.get(title='x').is_published)
         self.assertTrue(MenuItem.objects.get(title='y').is_published)
+
+
+class MarkedAnnotatedListTestCase(TestCaseWithDB):
+    def setUp(self):
+        site = Site.objects.get_current().pk
+        BASE_DATA = [
+            {'data': {'title': '1', 'site': site, 'uri': '/', 'is_published': True}},
+            {'data': {'title': '2', 'site': site, 'uri': '/a/', 'is_published': True}, 'children': [
+                {'data': {'title': '21', 'site': site, 'uri': '/a/b/c/', 'is_published': True}},
+                {'data': {'title': '22', 'site': site, 'uri': '/d/', 'is_published': True}},
+                {'data': {'title': '23', 'site': site, 'uri': '/e', 'is_published': True}, 'children': [
+                    {'data': {'title': '231', 'site': site, 'uri': '/HI',
+                    'is_published': True}},
+                ]},
+                {'data': {'title': '24', 'site': site, 'uri': '/x/', 'is_published': True}},
+            ]},
+            {'data': {'title': '3', 'site': site, 'uri': '/sup', 'is_published': True}},
+            {'data': {'title': '4', 'site': site, 'uri': '/yo', 'is_published': True}, 'children': [
+                {'data': {'title': '41', 'site': site, 'uri': '/hotdog/',
+                'is_published': True}},
+            ]},
+        ]
+        MenuItem.load_bulk(BASE_DATA)
+
+    def test_no_current_node(self):
+        tree = MenuItem.get_published_annotated_list(parent=None)
+        rf = RequestFactory()
+        req = rf.get('/zzzzzzzz/')
+        results = marked_annotated_list(request=req, tree=tree)
+        find_actives = [mi for mi, crap in results if mi.is_active]
+        self.assertEqual(len(find_actives), 0)
+
+    def test_current_node(self):
+        tree = MenuItem.get_published_annotated_list(parent=None)
+        rf = RequestFactory()
+        req = rf.get('/a/')
+        results = marked_annotated_list(request=req, tree=tree)
+        find_actives = [mi for mi, crap in results if mi.is_active]
+        self.assertEqual(len(find_actives), 1)
+        self.assertEqual(find_actives[0].title, '2')
+        self.assertEqual(find_actives[0].uri, '/a/')
+        self.assertTrue(find_actives[0].is_active)
+
+    def test_current_node_forces_other_markings(self):
+        tree = MenuItem.get_published_annotated_list(parent=None)
+        rf = RequestFactory()
+
+        req = rf.get('/a/b/c/')
+        results = marked_annotated_list(request=req, tree=tree)
+
+        active = [mi for mi, crap in results if mi.is_active]
+        desc = [mi for mi, crap in results if mi.is_descendant]
+        ance = [mi for mi, crap in results if mi.is_ancestor]
+        siblings = [mi for mi, crap in results if mi.is_sibling]
+        self.assertEqual(len(active), 1)
+        self.assertEqual(len(desc), 0)
+        self.assertEqual(len(ance), 1)
+        self.assertEqual(len(siblings), 3)
+
+        active_urls = [x.uri for x in active]
+        desc_urls = [x.uri for x in desc]
+        ancestor_urls = [x.uri for x in ance]
+        sibling_urls = [x.uri for x in siblings]
+        self.assertEqual(active_urls, ['/a/b/c/'])
+        self.assertEqual(desc_urls, [])
+        self.assertEqual(ancestor_urls, ['/a/'])
+        self.assertEqual(sibling_urls, ['/d/', '/e', '/x/'])
+
+    def test_current_node_forces_other_markings2(self):
+        tree = MenuItem.get_published_annotated_list(parent=None)
+        rf = RequestFactory()
+
+        req = rf.get('/a/')
+        results = marked_annotated_list(request=req, tree=tree)
+
+        active = [mi for mi, crap in results if mi.is_active]
+        desc = [mi for mi, crap in results if mi.is_descendant]
+        ance = [mi for mi, crap in results if mi.is_ancestor]
+        siblings = [mi for mi, crap in results if mi.is_sibling]
+        self.assertEqual(len(active), 1)
+        self.assertEqual(len(desc), 5)
+        self.assertEqual(len(ance), 0)
+        self.assertEqual(len(siblings), 3)
+
+        active_urls = [x.uri for x in active]
+        desc_urls = [x.uri for x in desc]
+        ancestor_urls = [x.uri for x in ance]
+        sibling_urls = [x.uri for x in siblings]
+        self.assertEqual(active_urls, ['/a/'])
+        self.assertEqual(desc_urls, ['/a/b/c/', '/d/', '/e', '/HI', '/x/'])
+        self.assertEqual(ancestor_urls, [])
+        self.assertEqual(sibling_urls, ['/', '/sup', '/yo'])
