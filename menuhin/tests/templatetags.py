@@ -142,3 +142,76 @@ class ParseTitleTestCase(TestCaseUsingDB):
         })
         rendered = template.render(context).strip()
         self.assertEqual(rendered, 'xxx /wheeee/')
+
+
+
+
+class ShowMenuTestCase(TestCaseUsingDB):
+    def setUp(self):
+        MenuItem.load_bulk(get_bulk_data())
+
+    def test_basic_usage(self):
+        req = RequestFactory().get('/HI')
+        template = Template('''
+        {% load menus %}
+        {% show_menu 'default' %}
+        ''')
+        context = Context({
+            'request': req,
+        })
+        rendered = template.render(context).strip()
+        self.assertIn('data-depth="1"', rendered)
+        self.assertIn('data-depth="3"', rendered)
+        self.assertIn('<a href="/HI" class="menu-link menu-link-level-2 '
+                      'menu-link-selected">', rendered)
+        # end piece
+        self.assertIn('24</a></li></ul></li></ul>', rendered)
+
+    def test_basic_usage_as_var(self):
+        req = RequestFactory().get('/HI')
+        template = Template('''
+        {% load menus %}
+        {% show_menu as crazylegs %}
+        {{ crazylegs.menu_root.uri }} ... {{ crazylegs.menu_nodes|length }}
+        ''')
+        context = Context({
+            'request': req,
+        })
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, '/a/ ... 6')
+
+    def test_pk_lookup(self):
+        req = RequestFactory().get('/HI')
+        template = Template('''
+        {% load menus %}
+        {% show_menu 4 as crazylegs %}
+        {{ crazylegs.menu_root.uri }} ... {{ crazylegs.menu_nodes|length }}
+        ''')
+        context = Context({
+            'request': req,
+        })
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, '/d/ ... 1')
+
+    def test_slug_lookup(self):
+        req = RequestFactory().get('/HI')
+        template = Template('''
+        {% load menus %}
+        {% show_menu 'hi' as crazylegs %}
+        {{ crazylegs.menu_root.uri }} ... {{ crazylegs.menu_nodes|length }}
+        ''')
+        context = Context({
+            'request': req,
+        })
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, '/HI ... 1')
+
+    def test_bad_menuitem(self):
+        template = Template('''
+        {% load menus %}
+        {% show_menu '1111111' as crazylegs %}
+        {{ crazylegs.menu_node.uri }}
+        ''')
+        context = Context()
+        rendered = template.render(context).strip()
+        self.assertEqual(rendered, '')

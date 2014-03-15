@@ -52,6 +52,7 @@ class ShowMenu(InclusionTag, AsTag):
         if 'request' in context:
             base.update(request=context['request'])
 
+        menu_slug = force_text(menu_slug)
         # if doing a PK lookup, given the PK is unique across any site, assume
         # the user knows wtf they're doing, so don't ask for only this site,
         # as that may never match.
@@ -76,7 +77,7 @@ class ShowMenu(InclusionTag, AsTag):
             marked_annotated_menu = marked_annotated_list(
                 request=context['request'],
                 tree=depth_filtered_menu)
-        else:
+        else:  # pragma: no cover
             marked_annotated_menu = depth_filtered_menu
 
         base.update(menu_root=menu_root,

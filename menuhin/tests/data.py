@@ -4,8 +4,8 @@ def get_bulk_data():
     return [
         {'data': {'title': '1', 'site': site, 'uri': '/',
          'menu_slug': 'root', 'is_published': True}},
-        {'data': {'title': '2', 'site': site, 'uri': '/a/', 'menu_slug': 'a',
-         'is_published': True}, 'children': [
+        {'data': {'title': '2', 'site': site, 'uri': '/a/', 'menu_slug':
+         'default', 'is_published': True}, 'children': [
             {'data': {'title': '21', 'site': site, 'uri': '/a/b/c/',
              'menu_slug': 'abc', 'is_published': True}},
             {'data': {'title': '22', 'site': site, 'uri': '/d/',
