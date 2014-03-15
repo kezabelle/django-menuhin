@@ -4,8 +4,6 @@ except ImportError:
     from django.utils.unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from django.core.exceptions import ValidationError
-from django.test.utils import override_settings
-from django.contrib.sites.models import Site
 from menuhin.models import MenuItem, is_valid_uri, MenuItemGroup, URI
 
 
