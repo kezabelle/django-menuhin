@@ -73,7 +73,6 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
         self.assertEqual(rendered, '/HI')
 
     def test_path_lookup(self):
-        req = RequestFactory().get('/')
         template = Template('''
         {% load menus %}
         {% show_breadcrumbs '/a/b/c/' as crazylegs %}
@@ -84,7 +83,6 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
         self.assertEqual(rendered, '/a/b/c/')
 
     def test_bad_lookup(self):
-        req = RequestFactory().get('/HI')
         template = Template('''
         {% load menus %}
         {% show_breadcrumbs as crazylegs %}
@@ -95,7 +93,6 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
         self.assertEqual(rendered, '')
 
     def test_bad_menuitem(self):
-        req = RequestFactory().get('/HI')
         template = Template('''
         {% load menus %}
         {% show_breadcrumbs '1111111' as crazylegs %}

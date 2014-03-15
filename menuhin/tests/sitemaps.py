@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 try:
     from unittest import TestCase
-except ImportError:
+except ImportError:  # pragma: no cover
     from django.utils.unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
-from django.contrib.sites.models import Site
 from menuhin.models import MenuItem
 from menuhin.sitemaps import MenuItemSitemap
 from .data import get_bulk_data
+
 
 class SitemapTestCase(TestCaseWithDB):
     def setUp(self):
