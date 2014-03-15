@@ -12,15 +12,18 @@ logger = logging.getLogger(__name__)
 
 class RequestTreeMiddleware(object):
     def get_ignorables(self):
-        yield settings.STATIC_URL
-        yield settings.MEDIA_URL
+        if hasattr(settings, 'STATIC_URL') and settings.STATIC_URL:
+            yield settings.STATIC_URL
+        if hasattr(settings, 'MEDIA_URL') and settings.MEDIA_URL:
+            yield settings.MEDIA_URL
         try:
             yield reverse('admin:index')
-        except NoReverseMatch:
+        except NoReverseMatch:  # pragma: no cover
             logger.debug("Admin is not mounted")
 
     def process_request(self, request):
-        if request.path.startswith(tuple(self.get_ignorables())):
+        ignored_prefixes = tuple(self.get_ignorables())
+        if request.path.startswith(ignored_prefixes):
             logger.debug("Skipping this request")
             return None
 
