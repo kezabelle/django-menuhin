@@ -53,8 +53,7 @@ class MenuItemOrNoneTestCase(TestCaseWithDB):
         self.assertEqual(result.uri, '/')
 
     def test_not_exists(self):
-        with self.assertNumQueries(1):
-            result = get_menuitem_or_none(MenuItem, '/a/b/c/')
+        result = get_menuitem_or_none(MenuItem, '/a/b/c/')
         self.assertIsNone(result)
 
 
