@@ -4,11 +4,12 @@ from django.forms.models import ModelChoiceField
 from django.forms.widgets import TextInput
 from django.db.models import BLANK_CHOICE_DASH
 from django.contrib.sites.models import Site
+from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from treebeard.forms import MoveNodeForm
 try:
     from django.utils.six import text_type
-except ImportError:
+except ImportError:  # pragma: no cover
     text_type = unicode
 from .utils import _collect_menus, update_all_urls
 from .models import MenuItem
@@ -33,8 +34,13 @@ class MenuItemTreeForm(MoveNodeForm):
 
 
 class ImportMenusForm(Form):
-    site = ModelChoiceField(queryset=Site.objects.none(), required=True)
-    klass = TypedChoiceField(choices=(), coerce=text_type, required=True)
+    site = ModelChoiceField(queryset=Site.objects.none(), required=True,
+                            label=_("Site"), help_text=_(
+                                "The site to import the selected menu into"))
+    klass = TypedChoiceField(choices=(), coerce=text_type, required=True,
+                             label=_("Menu"), help_text=_(
+                                 "Select a configured menu whose URLs you "
+                                 "want to add to the given site."))
 
     def _collected_menus(self):
         return tuple(_collect_menus())
