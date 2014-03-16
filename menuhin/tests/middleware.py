@@ -45,31 +45,27 @@ class RequestTreeMiddlewareTestCase(TestCaseWithDB):
     def test_descendants(self):
         req = self.rf.get('/a/')
         self.mw.process_request(req)
-        with self.assertNumQueries(7):
-            descendants = [x for x in req.descendants]
+        descendants = [x for x in req.descendants]
         urls = [x.uri for x in descendants]
         self.assertEqual(urls, ['/a/b/c/', '/d/', '/e', '/HI', '/x/'])
 
     def test_ancestors(self):
         req = self.rf.get('/a/b/c/')
         self.mw.process_request(req)
-        with self.assertNumQueries(3):
-            ancestors = [x for x in req.ancestors]
+        ancestors = [x for x in req.ancestors]
         urls = [x.uri for x in ancestors]
         self.assertEqual(urls, ['/a/'])
 
     def test_siblings(self):
         req = self.rf.get('/a/')
         self.mw.process_request(req)
-        with self.assertNumQueries(6):
-            siblings = [x for x in req.siblings]
+        siblings = [x for x in req.siblings]
         urls = [x.uri for x in siblings]
         self.assertEqual(urls, ['/', '/a/', '/sup', '/yo'])
 
     def test_children(self):
         req = self.rf.get('/a/')
         self.mw.process_request(req)
-        with self.assertNumQueries(6):
-            children = [x for x in req.children]
+        children = [x for x in req.children]
         urls = [x.uri for x in children]
         self.assertEqual(urls, ['/a/b/c/', '/d/', '/e', '/x/'])
