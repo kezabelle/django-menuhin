@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from operator import or_
+import operator
 from django.utils.functional import SimpleLazyObject, new_method_proxy
 
 try:
@@ -49,6 +49,8 @@ class RequestRelations(namedtuple('RequestRelations', ('relations', 'obj',
 class LengthLazyObject(SimpleLazyObject):
     __dir__ = new_method_proxy(dir)
     __len__ = new_method_proxy(len)
+    __getitem__ = new_method_proxy(operator.getitem)
+    __contains__ = new_method_proxy(operator.contains)
 
 
 def get_relations_for_request(model, request, relation):
@@ -167,7 +169,7 @@ def find_missing(model, urls, site_id=None):
     if url_count == 0:
         return None
 
-    paths = reduce(or_, (Q(uri__iexact=x.path) for x in urls))
+    paths = reduce(operator.or_, (Q(uri__iexact=x.path) for x in urls))
     existing = frozenset(
         model.objects.filter(paths).filter(site_id=site_id)
         .values_list('uri', flat=True))
