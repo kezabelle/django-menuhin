@@ -45,9 +45,10 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        'Django>=1.3',
-        'django-model-utils>=1.5',
-        'django-classy-tags>=0.4',
+        'Django>=1.4.10',
+        'django-treebeard>=2.0rc1',
+        'django-model-utils>=2.0',
+        'django-classy-tags>=0.5',
     ],
     zip_safe=False,
     keywords='django menu',

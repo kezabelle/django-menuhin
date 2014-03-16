@@ -206,7 +206,7 @@ depending on how recently the ``MenuItem`` was last changed.
 Unfinished bits
 ---------------
 
-* No tests. There is a `test_project` though.
+* Test coverage is not 100%.
 * Doesn't take querystrings into account yet.
 
 
