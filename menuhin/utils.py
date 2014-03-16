@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+import functools
 import operator
 from django.utils.functional import SimpleLazyObject, new_method_proxy
 
@@ -169,7 +170,8 @@ def find_missing(model, urls, site_id=None):
     if url_count == 0:
         return None
 
-    paths = reduce(operator.or_, (Q(uri__iexact=x.path) for x in urls))
+    paths = functools.reduce(operator.or_,
+                             (Q(uri__iexact=x.path) for x in urls))
     existing = frozenset(
         model.objects.filter(paths).filter(site_id=site_id)
         .values_list('uri', flat=True))
