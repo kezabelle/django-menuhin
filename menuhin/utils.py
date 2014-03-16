@@ -35,14 +35,6 @@ class RequestRelations(namedtuple('RequestRelations', ('relations', 'obj',
     def __contains__(self, thing):
         return thing in self.relations
 
-    def __gt__(self, other):
-        other = other.path.strip('/')
-        return self.path.startswith(other) and len(other) > len(self.path)
-
-    def __lt__(self, other):
-        other = other.path.strip('/')
-        return other.startswith(self.path) and len(self.path) < len(other)
-
     def __bool__(self):
         return self.has_relations() and self.found_instance()
 
