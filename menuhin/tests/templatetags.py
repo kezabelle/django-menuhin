@@ -30,7 +30,7 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
         self.assertIn(
             'breadcrumbs-self breadcrumbs-last breadcrumb-selected',
             rendered)
-        self.assertInHTML(
+        self.assertIn(
             '<a href="/HI" class="breadcrumbs-self-link">231</a>',
             rendered)
 
