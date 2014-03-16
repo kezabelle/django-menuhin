@@ -15,7 +15,12 @@ except ImportError:  # pragma: no cover
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
-from django.utils.text import slugify
+
+try:
+    from django.utils.text import slugify
+except ImportError:  # pragma: no cover
+    from django.template.defaultfilters import slugify
+
 from django.contrib.sites.models import Site
 from .signals import default_for_site_created, default_for_site_needed
 from django.conf import settings
