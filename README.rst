@@ -2,19 +2,21 @@
 django-menuhin
 ==============
 
-Another menu & breadcrumb application for `Django`_.
+Another menu & breadcrumb application for `Django`_, with support for
+syncing all links from Python, and allowing website admins to customise
+the trees.
 
 Is it usable?
 -------------
 
-Nope, not entirely. I keep re-writing it.
+Maybe. You should try it.
 
 
 What's the idea?
 ----------------
 
-I wanted to be able to declare menus in Python, but have them be flexible
-enough to allow for changes to come via client-input data.
+I want to be able to declare menus in Python, but have them be flexible
+enough to allow for changes to come via client-input data (eg: users)
 
 The idea in brief::
 
@@ -209,6 +211,13 @@ Unfinished bits
 * Test coverage is not 100%.
 * Doesn't take querystrings into account yet.
 
+Requirements
+------------
+
+* `Django`_
+* `django-treebeard`_
+* `django-model-utils`_
+* `django-classy-tags`_
 
 License
 -------
@@ -223,3 +232,5 @@ distribution for a complete copy.
 .. _django-treebeard: https://github.com/tabo/django-treebeard/
 .. _Python string formatting DSL: http://docs.python.org/2/library/string.html#format-examples
 .. _django-static-sitemaps: https://github.com/xaralis/django-static-sitemaps
+.. _django-model-utils: https://github.com/carljm/django-model-utils
+.. _django-classy-tags: https://github.com/ojii/django-classy-tags
