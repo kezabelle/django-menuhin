@@ -1,8 +1,7 @@
 try:
-    from unittest import TestCase
-except ImportError:
     from django.utils.unittest import TestCase
-from django.test import TestCase as TestCaseWithDB
+except ImportError:
+    from unittest import TestCase
 from django.core.exceptions import ValidationError
 from menuhin.models import MenuItem, is_valid_uri, MenuItemGroup, URI
 

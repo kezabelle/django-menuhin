@@ -144,8 +144,6 @@ class ParseTitleTestCase(TestCaseUsingDB):
         self.assertEqual(rendered, 'xxx /wheeee/')
 
 
-
-
 class ShowMenuTestCase(TestCaseUsingDB):
     def setUp(self):
         MenuItem.load_bulk(get_bulk_data())

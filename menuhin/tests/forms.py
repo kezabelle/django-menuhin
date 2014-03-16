@@ -1,7 +1,3 @@
-try:
-    from unittest import TestCase
-except ImportError:
-    from django.utils.unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from django.core.exceptions import ImproperlyConfigured
 from django.test.utils import override_settings

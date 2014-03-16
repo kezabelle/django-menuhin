@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 try:
-    from unittest import TestCase
-except ImportError:  # pragma: no cover
     from django.utils.unittest import TestCase
+except ImportError:  # pragma: no cover
+    from unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from menuhin.models import MenuItem
 from menuhin.sitemaps import MenuItemSitemap

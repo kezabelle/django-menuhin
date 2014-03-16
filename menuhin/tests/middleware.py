@@ -1,7 +1,7 @@
 try:
-    from unittest import TestCase
-except ImportError:
     from django.utils.unittest import TestCase
+except ImportError:
+    from unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from django.test.client import RequestFactory
 from django.test.utils import override_settings

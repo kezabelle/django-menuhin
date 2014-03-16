@@ -1,12 +1,11 @@
 try:
-    from unittest import TestCase
-except ImportError:
     from django.utils.unittest import TestCase
+except ImportError:
+    from unittest import TestCase
 from django.test import TestCase as TestCaseWithDB
 from django.test.utils import override_settings
 from django.test.client import RequestFactory
 from django.contrib.sites.models import Site
-from django.db.models.query import EmptyQuerySet
 from menuhin.models import MenuItem, URI
 from menuhin.utils import (ensure_default_for_site, DefaultForSite,
                            get_menuitem_or_none, set_menu_slug,
