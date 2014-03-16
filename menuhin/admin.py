@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 try:
     from django.utils.encoding import force_text
-except ImportError:
+except ImportError:  # pragma: no cover
     from django.utils.encoding import force_unicode as force_text
 from django.contrib.admin.templatetags.admin_urls import admin_urlname
 from django.template.response import TemplateResponse

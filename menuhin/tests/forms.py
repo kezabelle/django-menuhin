@@ -10,8 +10,11 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.admin.sites import NotRegistered
+from django.forms.models import modelform_factory
+from treebeard.forms import movenodeform_factory
 from menuhin.models import MenuItem
-from menuhin.forms import ImportMenusForm
+from menuhin.admin import MenuItemAdmin
+from menuhin.forms import ImportMenusForm, MenuItemTreeForm
 from .data import get_bulk_data, TestMenu2
 
 
@@ -84,6 +87,11 @@ class ImportMenusFormTestCase(TestCaseWithDB):
         except NotRegistered:
             pass
         admin.site.register(User, UserAdmin)
+        try:
+            admin.site.unregister(MenuItem)
+        except NotRegistered:
+            pass
+        admin.site.register(MenuItem, MenuItemAdmin)
         form = ImportMenusForm(data={
             'klass': 'menuhin.tests.data.TestMenu2',
             'site': 1,
@@ -91,4 +99,35 @@ class ImportMenusFormTestCase(TestCaseWithDB):
         self.assertTrue(form.is_valid())
         result = form.save()
         self.assertIsNotNone(result)
-        self.assertEqual(len(result), 2)
+        self.assertEqual(len(result), 3)
+
+
+class MenuItemTreeFormTestCase(TestCaseWithDB):
+    @override_settings(SITE_ID=2)
+    def test_site_initial(self):
+        site = Site(domain='x.com', name='x')
+        site.full_clean()
+        site.save()
+        form_for_class = movenodeform_factory(model=MenuItem,
+                                              form=MenuItemTreeForm)
+        form = form_for_class(data=None, files=None)
+        self.assertEqual(form.fields['site'].initial, 2)
+
+    def test_slug_not_in_cd(self):
+        form_for_class = movenodeform_factory(model=MenuItem,
+                                              form=MenuItemTreeForm,
+                                              exclude=['menu_slug'])
+        bound_data = {
+            '_ref_node_id': 0,
+            '_save': 'Save',
+            '_position': 'first-child',
+            'site': 1,
+            'is_published': 'on',
+            'uri': '/aaaaaaaaaaaaa/',
+            'title': 'yays',
+        }
+        form = form_for_class(data=bound_data, files=None)
+        self.assertTrue(form.is_valid())
+        form.save()
+        self.assertIn('menu_slug', form.cleaned_data)
+        self.assertEqual(form.cleaned_data['menu_slug'], 'aaaaaaaaaaaaa')
