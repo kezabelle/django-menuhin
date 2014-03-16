@@ -3,7 +3,7 @@ from .context_processors import *
 from .middleware import *
 from .utils import *
 from .models import *
-# from .forms import *
+from .forms import *
 # from .signals import *
 from .sitemaps import *
 from .templatetags import *

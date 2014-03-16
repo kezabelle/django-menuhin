@@ -123,7 +123,7 @@ CollectedMenu = namedtuple('CollectedMenu', ('path', 'instance', 'name'))
 
 def _collect_menus():
     MENUHIN_MENU_HANDLERS = getattr(settings, 'MENUHIN_MENU_HANDLERS', None)
-    if MENUHIN_MENU_HANDLERS is None and settings.DEBUG:
+    if MENUHIN_MENU_HANDLERS is None:
         raise ImproperlyConfigured("MENUHIN_MENU_HANDLERS not found in "
                                    "your settings module")
 
@@ -133,16 +133,16 @@ def _collect_menus():
     for menu_handler_path in MENUHIN_MENU_HANDLERS:
         try:
             dot = menu_handler_path.rindex('.')
-        except ValueError:
+        except ValueError:  # pragma: no cover
             raise ImproperlyConfigured("%s isn't a valid path to a menu handler" % menu_handler_path)
         handler_module, handler_cls = menu_handler_path[:dot], menu_handler_path[dot+1:]
         try:
             mod = import_module(handler_module)
-        except ImportError as e:
+        except ImportError as e:  # pragma: no cover
             raise ImproperlyConfigured('Error importing menu handler %s: "%s"' % (handler_module, e))
         try:
             final_menu_handler = getattr(mod, handler_cls)
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             raise ImproperlyConfigured('Menu handler module "%s" does not define a "%s" class' % (handler_module, handler_cls))
 
         menu_itself = final_menu_handler()
