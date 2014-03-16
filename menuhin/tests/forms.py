@@ -62,7 +62,9 @@ class ImportMenusFormTestCase(TestCaseWithDB):
         }, files=None)
         self.assertFalse(form.is_valid())
         # now fake some stuff, just to cover the branch.
-        form.cleaned_data['klass'] = 'menuhin.tests.data.TestMenu999999'
+        form.cleaned_data = {
+            'klass': 'menuhin.tests.data.TestMenu999999'
+        }
         with self.assertRaises(ValueError):
             form._menu_class_instance_from_cleaned_data()
 
