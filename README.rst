@@ -9,6 +9,9 @@ the trees.
 Is it usable?
 -------------
 
+.. image:: https://travis-ci.org/kezabelle/django-menuhin.png?branch=master
+  :target: https://travis-ci.org/kezabelle/django-menuhin
+
 Maybe. You should try it.
 
 
