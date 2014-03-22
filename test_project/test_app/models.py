@@ -9,12 +9,23 @@ try:
 except ImportError:
     from django.utils.encoding import force_unicode as force_text
 
+
 class UserMenu(MenuItemGroup):
     model = User
 
     def get_urls(self):
         for x in self.model.objects.all().iterator():
             yield URI(path='/user/{0}'.format(x.username), title='Yay!')
+        yield URI(path=reverse('test_login_required'),
+                  title='login required')
+        yield URI(path=reverse('test_user_passes_test'),
+                  title='user passes test')
+        yield URI(path=reverse('test_permission_required'),
+                  title='permission required')
+        yield URI(path=reverse('test_staff_required'),
+                  title='staff required')
+        yield URI(path=reverse('test_cbv'),
+                  title='class based view with decorator')
 
 
 class AdminMenu(MenuItemGroup):
