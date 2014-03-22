@@ -32,6 +32,9 @@ class MenuItemTreeForm(MoveNodeForm):
             self.cleaned_data['menu_slug'] = self.instance.menu_slug
         return super(MenuItemTreeForm, self).save(commit=commit)
 
+    class Meta:
+        model = MenuItem
+
 
 class ImportMenusForm(Form):
     site = ModelChoiceField(queryset=Site.objects.none(), required=True,
