@@ -6,8 +6,8 @@
     {% else %}
         </li>
     {% endif %}
-    <li class="menu-item menu-item-level-{{ node_metadata.level }}{% if node.is_leaf %} menu-item-leaf{% endif %}{% if node.is_root %} menu-item-root{% endif %}{% if node.is_active %} menu-item-selected{% endif %}{% if node.is_ancestor %} menu-item-ancestor{% endif %}{% if node.is_sibling %} menu-item-sibling{% endif %}{% if node.is_descendant %} menu-item-descendant{% endif %}" data-depth="{{ node.get_depth }}" data-created="{{ node.created|date:'c' }}">
-    <a href="{{ node.get_absolute_url }}" class="menu-link menu-link-level-{{ node_metadata.level }}{% if node.is_active %} menu-link-selected{% endif %}">{% if node.title_needs_parsing %}{% parse_title node %}{% else %}{{ node.title }}{% endif %}</a>
+    <li class="menu-item menu-item-level-{{ node_metadata.level }}{% if node.is_leaf %} menu-item-leaf{% endif %}{% if node.is_root %} menu-item-root{% endif %}{% if node.is_active %} menu-item-selected{% endif %}{% if node.is_ancestor %} menu-item-ancestor{% endif %}{% if node.is_sibling %} menu-item-sibling{% endif %}{% if node.is_descendant %} menu-item-descendant{% endif %}{% if node.vary_on_user %} menu-item-varies{% endif %}" data-depth="{{ node.get_depth }}" data-created="{{ node.created|date:'c' }}">
+    <a href="{{ node.get_absolute_url }}" class="menu-link menu-link-level-{{ node_metadata.level }}{% if node.is_active %} menu-link-selected{% endif %}{% if node.vary_on_user %} menu-link-varies{% endif %}">{% parse_title node %} {{ node.user_passes_test }}</a>
     {% for close in node_metadata.close %}
         </li></ul>
     {% endfor %}

@@ -3,6 +3,7 @@ from collections import namedtuple
 import functools
 import operator
 from django.utils.functional import SimpleLazyObject, new_method_proxy
+from django.core.urlresolvers import resolve, Resolver404
 
 try:
     from importlib import import_module
@@ -226,10 +227,65 @@ def marked_annotated_list(request, tree):
     if current_node is None:
         return tree
 
+    request_user = getattr(request, 'user', None)
+
     for tree_node, tree_info in tree:
         tree_node.is_descendant = tree_node.is_descendant_of(current_node)
         tree_node.is_sibling = (tree_node.is_sibling_of(current_node) and
                                 tree_node != current_node)
         # there is no is_ancestor_of, so we can invert it.
         tree_node.is_ancestor = current_node.is_descendant_of(tree_node)
+
+        # local URL, may be resolvable
+        if tree_node.uri.startswith('/') and request_user is not None:
+            try:
+                result = resolve(tree_node.uri)
+            except Resolver404:
+                tree_node.vary_on_user = False
+                tree_node.user_passes_test = True
+            else:
+                decorators = get_resolvermatch_decorators(match=result)
+                if decorators is None:
+                    decorators = ()
+                passes = tuple(run_resolvermatch_decorators(
+                    callables=decorators, for_user=request_user))
+                if len(passes) > 0:
+                    tree_node.vary_on_user = True
+                    tree_node.user_passes_test = all(x.result for x in passes)
     return tree
+
+
+ResolvedDecorator = namedtuple('ResolvedDecorator', ['resolved', 'decorator'])
+
+
+def get_resolvermatch_decorators(match):
+    if (hasattr(match.func, '__closure__')
+            and match.func.__closure__ is not None):
+        return (ResolvedDecorator(resolved=match, decorator=x.cell_contents)
+                for x in match.func.__closure__
+                if hasattr(x, 'cell_contents') and x.cell_contents
+                and callable(x.cell_contents))
+    return None
+
+
+DecoratorResult = namedtuple('DecoratorResult', 'resolved', 'result')
+
+
+def run_resolvermatch_decorators(callables, for_user):
+    for resolved, x in callables:
+        if hasattr(x, 'func_code'):
+            var_count = len(x.func_code.co_varnames)
+            first_param = x.func_code.co_varnames[0].lower()
+            # consider self/cls and shift which param to look at.
+            second_param = None
+            if var_count > 1:
+                second_param = x.func_code.co_varnames[1].lower()
+
+            is_user_callable = (
+                var_count == 1 and first_param in ('u', 'user'),
+                var_count > 1 and second_param in ('u', 'user'),
+            )
+            if any(is_user_callable):
+                yield DecoratorResult(resolved=resolved,
+                                      result=x(for_user, *resolved.args,
+                                               **resolved.kwargs))

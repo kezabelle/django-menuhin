@@ -2,7 +2,7 @@
 import logging
 from django.contrib.sites.models import Site
 from classytags.core import Options
-from classytags.arguments import Argument, StringArgument
+from classytags.arguments import Argument
 from classytags.helpers import InclusionTag, AsTag
 from menuhin.models import MenuItem
 from menuhin.utils import marked_annotated_list
