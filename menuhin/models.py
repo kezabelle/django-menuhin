@@ -54,12 +54,8 @@ class MenuItem(TimeStampedModel, MP_Node):
     is_ancestor = False
     is_descendant = False
     is_sibling = False
-    # objects = TreePageManager()
-    # node_order_by = ('path', 'depth')
-
-    # def to_namedtuple(self):
-    #     return SafeMenuItem(menu_slug=self.menu_slug, site_id=self.site_id,
-    #                         title=self.title, uri=self.uri)
+    user_passes_test = True
+    vary_on_user = False
 
     def __str__(self):
         return self.title  # pragma: no cover
