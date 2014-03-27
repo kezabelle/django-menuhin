@@ -268,7 +268,7 @@ def get_resolvermatch_decorators(match):
     return None
 
 
-DecoratorResult = namedtuple('DecoratorResult', 'resolved', 'result')
+DecoratorResult = namedtuple('DecoratorResult', ('resolved', 'result'))
 
 
 def run_resolvermatch_decorators(callables, for_user):
