@@ -68,6 +68,8 @@ To keep the python-written URIs up to date, the following are available:
 * a **Pre Delete** signal handler (``menuhin.listeners.unpublish_on_delete``)
   for quietly removing menu items which represent URLs that can no longer
   exist because they've been deleted.
+* a celery task (``menuhin.tasks.update_urls_for_all_sites``) which may be
+  set up to run periodically to fill in anything missing.
 
 
 Getting relations
