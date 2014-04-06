@@ -68,10 +68,8 @@ class ShowMenu(InclusionTag, AsTag):
         except MenuItem.DoesNotExist:
             return base
 
-        annotated_menu = MenuItem.get_published_annotated_list(
-            parent=menu_root)
-        depth_filtered_menu = tuple(x for x in annotated_menu
-                                    if x[1]['level'] <= to_depth)
+        depth_filtered_menu = MenuItem.get_published_annotated_list(
+            parent=menu_root, to_depth=to_depth)
 
         if 'request' in context:
             marked_annotated_menu = marked_annotated_list(

@@ -108,10 +108,21 @@ class MenuItem(TimeStampedModel, MP_Node):
         """
         result, info = [], {}
         start_depth, prev_depth = (None, None)
+
         if 'site' not in tree_kwargs:
             tree_kwargs.update(site=Site.objects.get_current())
+
         if 'is_published' not in tree_kwargs:
             tree_kwargs.update(is_published=True)
+
+        # shuffle the depth around as necessary ...
+        if 'to_depth' in tree_kwargs:
+            maximum_depth = tree_kwargs.pop('to_depth')
+            # go this far *from the parent*
+            if parent is not None:
+                maximum_depth += parent.get_depth()
+            tree_kwargs.update(depth__lte=maximum_depth)
+
         qs = cls.get_tree(parent).select_related('site').filter(**tree_kwargs)
         for node in qs:
             depth = node.get_depth()
