@@ -213,6 +213,18 @@ def set_menu_slug(uri, model=None):
     return menu_slug[:max_length]
 
 
+def get_title(instance):
+    if hasattr(instance, 'get_menu_title'):
+        title = instance.get_menu_title()
+    elif hasattr(instance, 'get_title'):
+        title = instance.get_title()
+    elif hasattr(instance, 'title'):
+        title = instance.title
+    else:
+        title = force_text(instance)
+    return title
+
+
 def marked_annotated_list(request, tree):
     """
     Mark up the tree objects with

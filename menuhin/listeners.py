@@ -4,7 +4,7 @@ except ImportError:
     from django.utils.encoding import force_unicode as force_text
 from django.contrib.sites.models import Site
 from .models import MenuItem, URI
-from .utils import update_all_urls
+from .utils import update_all_urls, get_title
 
 
 def create_menu_url(sender, instance, created, **kwargs):
@@ -18,16 +18,9 @@ def create_menu_url(sender, instance, created, **kwargs):
     if not hasattr(instance, 'get_absolute_url'):
         return None
 
-    if hasattr(instance, 'get_menu_title'):
-        title = instance.get_menu_title()
-    elif hasattr(instance, 'get_title'):
-        title = instance.get_title()
-    elif hasattr(instance, 'title'):
-        title = instance.title
-    else:
-        title = force_text(instance)
-
-    uri = URI(path=instance.get_absolute_url(), title=title)
+    title = get_title(instance)
+    abs_url = instance.get_absolute_url()
+    uri = URI(path=abs_url, title=title)
     return update_all_urls(model=MenuItem, urls=(uri,))
 
 
