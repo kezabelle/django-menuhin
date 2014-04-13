@@ -2,7 +2,7 @@
 {% spaceless %}
 {% for node, node_metadata in menu_nodes %}
     {% if node_metadata.open %}
-        <ul class="menu-new-level menu-level-{{ node_metadata.level }}" data-depth="{{ node.get_depth }}">
+        <ul class="{% if forloop.first %}menu-root {% endif %}menu-new-level menu-level-{{ node_metadata.level }}" data-depth="{{ node.get_depth }}">
     {% else %}
         </li>
     {% endif %}
