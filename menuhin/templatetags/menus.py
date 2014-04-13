@@ -91,6 +91,12 @@ class ShowMenu(InclusionTag, AsTag):
             context[varname] = self.get_context(context, **kwargs)
             return ''
         return super(ShowMenu, self).render_tag(context, **kwargs)
+
+    def get_template(self, context, **kwargs):
+        template = kwargs.get('template', None)
+        if template is not None:
+            return template
+        return super(ShowMenu, self).get_template(context, **kwargs)
 register.tag(ShowMenu)
 
 
@@ -166,4 +172,10 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
             context[varname] = self.get_context(context, **kwargs)
             return ''
         return super(ShowBreadcrumbs, self).render_tag(context, **kwargs)
+
+    def get_template(self, context, **kwargs):
+        template = kwargs.get('template', None)
+        if template is not None:
+            return template
+        return super(ShowBreadcrumbs, self).get_template(context, **kwargs)
 register.tag(ShowBreadcrumbs)
