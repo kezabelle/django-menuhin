@@ -2,6 +2,7 @@ import logging
 from collections import namedtuple
 import functools
 import operator
+from django.utils.html import strip_tags
 from django.utils.functional import SimpleLazyObject, new_method_proxy
 from django.core.urlresolvers import resolve, Resolver404
 
@@ -222,6 +223,9 @@ def get_title(instance):
         title = instance.title
     else:
         title = force_text(instance)
+    title = strip_tags(title).strip()
+    if title == "":
+        title = '<No title>'
     return title
 
 
