@@ -24,7 +24,7 @@ from django.contrib.sites.models import Site
 # from model_utils.managers import PassThroughManager
 from model_utils.models import TimeStampedModel
 # from .querysets import MenuQuerySet
-from .utils import get_relations_for_request, set_menu_slug
+from .utils import get_relations_for_request, set_menu_slug, get_title
 # from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help,
@@ -153,6 +153,33 @@ class MenuItemGroup(object):
     def get_urls(self, *args, **kwargs):
         raise NotImplementedError("Subclasses should implement this to yield "
                                   "`URI` instances.")
+
+
+class InvalidModelError(ValueError): pass  # noqa
+
+
+class ModelMenuItemGroup(MenuItemGroup):
+    model = None
+
+    def __init__(self):
+        super(ModelMenuItemGroup, self).__init__()
+        model = self.get_model()
+        if model is None:
+            raise InvalidModelError("No model class provided")
+        if not hasattr(model, 'get_absolute_url'):
+            raise InvalidModelError("{cls!r} lacks a `get_absolute_url` "
+                                    "method")
+
+    def get_model(self):
+        return self.model
+
+    def get_queryset(self):
+        return self.get_model().objects.all().iterator()
+
+    def get_urls(self):
+        queryset = self.get_queryset()
+        for obj in queryset:
+            yield URI(path=obj.get_absolute_url(), title=get_title(obj))
 
 # collects just a path and a page title, used for inserting.
 URI = namedtuple('URI', ('path', 'title'))
