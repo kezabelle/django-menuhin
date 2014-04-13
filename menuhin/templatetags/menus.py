@@ -66,6 +66,10 @@ class ShowMenu(InclusionTag, AsTag):
         try:
             menu_root = MenuItem.objects.select_related('site').get(**lookup)
         except MenuItem.DoesNotExist:
+            msg = "Unable to find menu item using {0!r}".format(lookup)
+            logger.warning(msg, exc_info=1, extra={
+                'request': context.get('request')
+            })
             return base
 
         depth_filtered_menu = MenuItem.get_published_annotated_list(
@@ -76,6 +80,7 @@ class ShowMenu(InclusionTag, AsTag):
                 request=context['request'],
                 tree=depth_filtered_menu)
         else:  # pragma: no cover
+            logger.info("Cannot calculate position in tree without a request")
             marked_annotated_menu = depth_filtered_menu
 
         base.update(menu_root=menu_root,
@@ -139,6 +144,10 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         try:
             menuitem = MenuItem.objects.select_related('site').get(**lookup)
         except MenuItem.DoesNotExist:
+            msg = "Unable to find menu item using {0!r}".format(lookup)
+            logger.warning(msg, exc_info=1, extra={
+                'request': context.get('request')
+            })
             return base
         menuitem.is_active = True
 
