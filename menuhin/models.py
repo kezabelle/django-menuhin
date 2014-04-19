@@ -151,6 +151,10 @@ class MenuItemGroup(object):
         return get_verbose_name(self.__class__.__name__)
 
     def get_urls(self, *args, **kwargs):
+        """
+        This may yield individual items, or just return an iterable.
+        The choice is YOUUURS.
+        """
         raise NotImplementedError("Subclasses should implement this to yield "
                                   "`URI` instances.")
 
@@ -177,9 +181,37 @@ class ModelMenuItemGroup(MenuItemGroup):
         return self.get_model().objects.all().iterator()
 
     def get_urls(self):
+        """
+        Unlike the standard MenuItemGroup usage, which would yield
+        individual items, this one collects into a complete iterable so
+        that it may be de-duplicated for any list urls.
+        """
         queryset = self.get_queryset()
+        final_urls = set()
         for obj in queryset:
-            yield URI(path=obj.get_absolute_url(), title=get_title(obj))
+
+            abs_url = getattr(obj, 'get_absolute_url')
+            if callable(abs_url):
+                abs_url = abs_url()
+
+            abs_obj = URI(path=abs_url, title=get_title(obj))
+            if abs_obj not in final_urls:
+                final_urls.add(abs_obj)
+
+            # there's no definitive way I'd like the title part of the next
+            # bit to work, so we just shove the URL in as the title.
+            list_url = getattr(obj, 'get_list_url', None)
+            if list_url is None:
+                continue
+
+            if callable(list_url):
+                list_url = list_url()
+
+            list_obj = URI(path=list_url, title=list_url)
+            if list_obj not in final_urls:
+                final_urls.add(list_obj)
+        return final_urls
+
 
 # collects just a path and a page title, used for inserting.
 URI = namedtuple('URI', ('path', 'title'))
