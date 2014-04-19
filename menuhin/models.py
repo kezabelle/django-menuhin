@@ -77,6 +77,11 @@ class MenuItem(TimeStampedModel, MP_Node):
     def href(self):
         return self.uri
 
+    def get_canonical_url(self):
+        domain = self.site.domain.strip('/')
+        path = self.get_absolute_url().lstrip('/')
+        return '//{domain}/{path}'.format(domain=domain, path=path)
+
     def is_balanced(self, prefix, suffix):
         has_lefts = self.title.count(prefix)
         if has_lefts:
