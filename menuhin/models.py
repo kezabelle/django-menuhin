@@ -74,6 +74,9 @@ class MenuItem(TimeStampedModel, MP_Node):
     def get_absolute_url(self):
         return self.uri
 
+    def href(self):
+        return self.uri
+
     def is_balanced(self, prefix, suffix):
         has_lefts = self.title.count(prefix)
         if has_lefts:
