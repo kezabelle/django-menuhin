@@ -24,26 +24,27 @@ def create_menu_url(sender, instance, created, **kwargs):
     return update_all_urls(model=MenuItem, urls=(uri,))
 
 
-def update_old_url(sender, instance, created, **kwargs):
+def update_old_url(sender, instance, raw, using, **kwargs):
     """
     pre_save listener to update a URL if it moves. Requires an existing
     instance and a get_absolute_url implementation.
     """
-    if created:
+    if not instance.pk:
         return None
 
     if not hasattr(instance, 'get_absolute_url'):
         return None
 
     new_url = instance.get_absolute_url()
-    old_instance = instance.__class__.objects.get(pk=instance.pk)
+    old_instance = instance.__class__.objects.using(using).get(pk=instance.pk)
     old_url = old_instance.get_absolute_url()
     if old_url == new_url:
         return None
 
     filter_by = {'uri__iexact': old_url, 'site': Site.objects.get_current()}
     update_on = {'uri': new_url}
-    return MenuItem.objects.filter(**filter_by).update(**update_on)
+    return MenuItem.objects.using(using).filter(**filter_by).update(
+        **update_on)
 
 
 def unpublish_on_delete(sender, instance, **kwargs):
