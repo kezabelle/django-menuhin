@@ -221,9 +221,14 @@ def get_title(instance):
         title = instance.get_title()
     elif hasattr(instance, 'title'):
         title = instance.title
+    elif hasattr(instance, 'get_headline'):
+        title = instance.get_headline()
+    elif hasattr(instance, 'headline'):
+        title = instance.headline
     else:
-        title = force_text(instance)
-    title = strip_tags(title).strip()
+        title = instance  # rely on calling str or unicode
+
+    title = strip_tags(force_text(title)).strip()
     if title == "":
         title = '<No title>'
     return title
