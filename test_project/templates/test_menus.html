@@ -59,7 +59,9 @@
     nodes themselves:<br>
     <ol>
         {% for node, meta in contextvar.menu_nodes %}
-        <li><a href="{{ node.get_absolute_url }}">{{ node.title }}</a></li>
+        <li><a href="{{ node.get_absolute_url }}">
+        {{ node.title }} {% if node.title_needs_parsing %}<br>(parsed as: <b>{% parse_title node %}</b>){% endif %}
+        </a></li>
         {% endfor %}
     </ol>
     <hr>
