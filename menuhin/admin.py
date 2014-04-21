@@ -70,6 +70,9 @@ class MenuItemAdmin(TreeAdmin):
         return patterns('', import_url) + super(MenuItemAdmin, self).get_urls()
 
     def import_view(self, request):
+        if not self.has_add_permission(request):
+            raise PermissionDenied("Cannot add new menu items")
+
         form = ImportMenusForm(data=request.POST or None, files=None)
 
         app_label = self.model._meta.app_label
