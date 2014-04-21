@@ -99,5 +99,5 @@ class MenuItemFakeInline(GenericInlineModelAdmin):
             except MenuItem.DoesNotExist:
                 pass
             else:
-                self.formset.tree_lookup = menu_root.menu_slug
+                self.formset.tree_lookup = menu_root
         return self.formset

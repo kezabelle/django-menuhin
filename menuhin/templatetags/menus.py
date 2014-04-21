@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from collections import namedtuple
 from django.contrib.sites.models import Site
 from classytags.core import Options
 from classytags.arguments import Argument
@@ -105,6 +106,9 @@ class ShowMenu(InclusionTag, AsTag):
 register.tag(ShowMenu)
 
 
+ItemWithMeta = namedtuple('ItemWithMeta', 'obj query')
+
+
 class ShowBreadcrumbs(InclusionTag, AsTag):
     template = 'menuhin/show_breadcrumbs.html'
     name = "show_breadcrumbs"
@@ -115,19 +119,12 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         'as', Argument('var', required=False, default=None, resolve=False)
     )
 
-    def get_context(self, context, path_or_menuslug, template, **kwargs):
-        site = Site.objects.get_current()
-        base = {
-            'site': site,
-            'template': template or self.template,
-        }
-        if 'request' in context:
-            base.update(request=context['request'])
+    def get_menuitem(self, context, path_or_menuslug, site_instance):
+        # allow for failing early.
+        if isinstance(path_or_menuslug, MenuItem):
+            return ItemWithMeta(obj=path_or_menuslug, query=None)
 
         path_or_menuslug = force_text(path_or_menuslug)
-        # try to go by PK, or if there's no invalid characters (eg: /:_ ...)
-        # by menu_slug, otherwise falling back to assuming the input is
-        # request.path or whatevers.
         if path_or_menuslug.isdigit():
             lookup = {'pk': int(path_or_menuslug)}
         elif slug_re.search(path_or_menuslug):
@@ -137,19 +134,44 @@ class ShowBreadcrumbs(InclusionTag, AsTag):
         elif 'request' in context:
             lookup = {'uri__iexact': context['request'].path}
         else:
-            return base
+            msg = ("Couldn't figure out a lookup method for argument "
+                   "{0!r}".format(path_or_menuslug))
+            logger.warning(msg, extra={
+                'request': context.get('request')
+            })
+            return ItemWithMeta(obj=None, query=None)
 
-        lookup.update(site=site, is_published=True)
-        base.update(query=lookup)
+        lookup.update(site=site_instance, is_published=True)
+
         try:
-            menuitem = MenuItem.objects.select_related('site').get(**lookup)
+            obj = MenuItem.objects.select_related('site').get(**lookup)
+            return ItemWithMeta(obj=obj, query=lookup)
         except MenuItem.DoesNotExist:
             msg = "Unable to find menu item using {0!r}".format(lookup)
             logger.warning(msg, exc_info=1, extra={
                 'request': context.get('request')
             })
+        return ItemWithMeta(obj=None, query=lookup)
+
+    def get_context(self, context, path_or_menuslug, template, **kwargs):
+        site = Site.objects.get_current()
+        base = {
+            'site': site,
+            'template': template or self.template,
+        }
+        if 'request' in context:
+            base.update(request=context['request'])
+
+        # try to go by PK, or if there's no invalid characters (eg: /:_ ...)
+        # by menu_slug, otherwise falling back to assuming the input is
+        # request.path or whatevers.
+        fetched_menuitem = self.get_menuitem(context, path_or_menuslug, site)
+        menuitem = fetched_menuitem.obj
+        if menuitem is None:
             return base
+
         menuitem.is_active = True
+        base.update(query=fetched_menuitem.query)
 
         def marked_ancestors():
             ancestors = (menuitem.get_ancestors()
