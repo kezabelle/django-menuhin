@@ -24,7 +24,8 @@ from django.contrib.sites.models import Site
 # from model_utils.managers import PassThroughManager
 from model_utils.models import TimeStampedModel
 # from .querysets import MenuQuerySet
-from .utils import get_relations_for_request, set_menu_slug, get_title
+from .utils import (get_relations_for_request, set_menu_slug, get_title,
+                    get_list_title)
 # from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help,
@@ -215,8 +216,9 @@ class ModelMenuItemGroup(MenuItemGroup):
             if callable(list_url):
                 list_url = list_url()
 
-            list_obj = URI(path=list_url, title=list_url)
-            if list_obj not in final_urls:
+            list_title = get_list_title(obj, url=list_url)
+            list_obj = URI(path=list_url, title=list_title)
+            if list_title is not None and list_obj not in final_urls:
                 final_urls.add(list_obj)
         return final_urls
 

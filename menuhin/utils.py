@@ -234,6 +234,26 @@ def get_title(instance):
     return title
 
 
+def get_list_title(instance, url=None):
+    """
+    On the offchance you've set the list page's title on the model instance,
+    then yay, we can look it up.
+    """
+    title = url
+    if hasattr(instance, 'get_list_menu_title'):
+        title = instance.get_list_menu_title(url)
+    elif hasattr(instance, 'get_list_title'):
+        title = instance.get_list_title(url)
+    elif hasattr(instance, 'get_list_headline'):
+        title = instance.get_list_headline(url)
+
+    if title is not None:
+        title = strip_tags(force_text(title)).strip()
+        if title == "":
+            title = url
+    return title  # may be None or the URL again...
+
+
 def marked_annotated_list(request, tree):
     """
     Mark up the tree objects with
