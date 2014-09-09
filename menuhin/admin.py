@@ -12,10 +12,16 @@ from django.contrib.admin.templatetags.admin_urls import admin_urlname
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.http import HttpResponseForbidden
-from menuhin.models import MenuItem
+from .models import MenuItem
 from .forms import MenuItemTreeForm, ImportMenusForm
 from .utils import (ensure_default_for_site, change_published_status,
                     find_missing)
+
+try:
+    from .checks import MenuhinAdminChecks
+except ImportError:
+    def MenuhinAdminChecks():
+        return True
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,7 @@ class MenuItemAdmin(TreeAdmin):
         }),
     ]
     change_list_template = 'admin/menuhin/menuitem/tree_change_list.html'
+    checks_class = MenuhinAdminChecks
 
     @property
     def media(self):
