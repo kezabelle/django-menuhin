@@ -28,16 +28,13 @@ def runtests():
     sys.path.insert(0, parent)
 
     try:
-        from django.test.runner import DiscoverRunner
-        runner_class = DiscoverRunner
+        from django.test.runner import DiscoverRunner as Runner
         test_args = ['menuhin.tests']
     except ImportError:
-        from django.test.simple import DjangoTestSuiteRunner
-        runner_class = DjangoTestSuiteRunner
-        test_args = ['tests']
-
-    failures = runner_class(
-        verbosity=1, interactive=True, failfast=False).run_tests(test_args)
+        from django.test.simple import DjangoTestSuiteRunner as Runner
+        test_args = ['menuhin']
+    failures = Runner(
+        verbosity=2, interactive=True, failfast=False).run_tests(test_args)
     sys.exit(failures)
 
 

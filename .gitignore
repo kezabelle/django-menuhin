@@ -3,5 +3,6 @@
 *.egg
 *.egg-info
 .coverage
+.tox
 coverage.xml
 pep8.txt
