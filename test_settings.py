@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
-
-logging.getLogger('menuhin').addHandler(logging.NullHandler())
+try:
+    logging.getLogger('menuhin').addHandler(logging.NullHandler())
+except AttributeError:  # < Python 2.7
+    pass
 
 DATABASES = {
     'default': {
