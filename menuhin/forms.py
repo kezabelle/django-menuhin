@@ -58,8 +58,14 @@ class ImportMenusForm(Form):
             self.fields['site'].initial = settings.SITE_ID
 
         if 'klass' in self.fields:
-            self.fields['klass'].choices = (BLANK_CHOICE_DASH +
-                                            list(self._menu_class_choices()))
+            choices = (BLANK_CHOICE_DASH + list(self._menu_class_choices()))
+            self.fields['klass'].choices = choices
+            if len(choices) <= 1:
+                self.fields['klass'].widget.attrs.update({
+                    'disabled': 'disabled',
+                    'readonly': 'readonly'})
+                self.fields['klass'].help_text = _("No menus have been "
+                                                   "configured yet")
 
     # def clean(self):
     #     super(ImportMenusForm, self).clean()
