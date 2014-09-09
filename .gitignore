@@ -2,5 +2,6 @@
 *.json
 *.egg
 *.egg-info
+.coverage
 coverage.xml
 pep8.txt

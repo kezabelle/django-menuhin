@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+import logging
+
+logging.getLogger('menuhin').addHandler(logging.NullHandler())
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -28,3 +32,12 @@ SITE_ID = 1
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
 )
+
+SILENCED_SYSTEM_CHECKS = [
+    "1_7.W001",
+    "menuhin.W2",
+]
+
+MENUHIN_MENU_HANDLERS = ()
+
+USE_TZ = False

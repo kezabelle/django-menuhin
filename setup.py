@@ -4,29 +4,14 @@ import sys
 import os
 from setuptools import setup
 
-try:
-    from setuptest import test
-    test_config = {
-        'cmdclass': {'test': test}
-    }
-except ImportError:
-    test_config = {
-        'tests_require': (
-            'django-setuptest',
-            ),
-        'test_suite': 'setuptest.setuptest.SetupTestSuite'
-    }
-    for argument in ('--failfast', '--autoreload', '--label'):
-        if argument in sys.argv:
-            sys.argv.remove(argument)
-
 
 HERE = os.path.abspath(os.path.dirname(__file__))
+
 
 def make_readme(root_path):
     FILES = ('README.rst', 'LICENSE', 'CHANGELOG', 'CONTRIBUTORS')
     for filename in FILES:
-        filepath = os.path.realpath(os.path.join(HERE, filename))
+        filepath = os.path.realpath(os.path.join(root_path, filename))
         if os.path.isfile(filepath):
             with open(filepath, mode='r') as f:
                 yield f.read()
@@ -45,9 +30,9 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        'Django>=1.4.10',
+        'Django>=1.4.15',
         'django-treebeard>=2.0rc1',
-        'django-model-utils>=2.0',
+        'django-model-utils>=2.1.1',
         'django-classy-tags>=0.5',
     ],
     zip_safe=False,
@@ -65,5 +50,5 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
-    **test_config
+    test_suite='runtests.runtests',
 )

@@ -46,5 +46,5 @@ class SitemapTestCase(TestCaseWithDB):
         for x in results:
             self.assertIsInstance(x, datetime)
             self.assertGreater(
-                x, datetime.utcnow() - timedelta(minutes=3600))
-            self.assertLess(x, datetime.utcnow())
+                x, datetime.now() - timedelta(minutes=3600))
+            self.assertLess(x, datetime.now())

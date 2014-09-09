@@ -22,9 +22,10 @@ HANDLERS = (
 
 class ImportMenusFormTestCase(TestCaseWithDB):
 
-    def test_setting_not_found(self):
-        with self.assertRaises(ImproperlyConfigured):
-            ImportMenusForm(data=None, files=None)
+    def test_setting_not_found_raises_error(self):
+        with self.settings(MENUHIN_MENU_HANDLERS=None):
+            with self.assertRaises(ImproperlyConfigured):
+                ImportMenusForm(data=None, files=None)
 
     @override_settings(SITE_ID=2, MENUHIN_MENU_HANDLERS=HANDLERS)
     def test_site_initial(self):
