@@ -29,7 +29,7 @@ from .utils import (get_relations_for_request, set_menu_slug, get_title,
 # from helpfulfields.models import ChangeTracking, Publishing
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help,
-                          menuitem_v, menuitem_vp)
+                          menuitem_v, menuitem_vp, uri_v)
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class MenuItem(TimeStampedModel, MP_Node):
     site = ForeignKey('sites.Site')
     title = CharField(max_length=50, verbose_name=display_title_label,
                       help_text=display_title_help)
-    uri = TextField(validators=[is_valid_uri])
+    uri = TextField(validators=[is_valid_uri], verbose_name=uri_v)
     is_published = BooleanField(default=False, db_index=True)
     is_active = False
     is_ancestor = False

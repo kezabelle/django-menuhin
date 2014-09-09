@@ -14,3 +14,6 @@ menu_v = _('menu')
 menu_vp = _('menus')
 menuitem_v = _('menu item')
 menuitem_vp = _('menu items')
+
+
+uri_v = _("URL")
