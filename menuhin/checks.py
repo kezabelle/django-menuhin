@@ -31,6 +31,19 @@ def treebeard_template_found(cls):
     return errors
 
 
+def treebeard_has_request_context_processor(cls):
+    from django.conf import settings
+    errors = []
+    if 'django.core.context_processors.request' not in settings.TEMPLATE_CONTEXT_PROCESSORS:  # noqa
+        errors.append(checks.Error(
+            "treebeard requires the request be in the template context",
+            hint="put `django.core.context_processors.request` "
+                 "into TEMPLATE_CONTEXT_PROCESSORS",
+            obj=cls.__name__, id='menuhin.E2',
+        ))
+    return errors
+
+
 @register('menuhin', 'settings')
 def settings_defined(app_configs):
     from django.conf import settings
@@ -60,4 +73,5 @@ class MenuhinAdminChecks(ModelAdminChecks):
         checks = super(MenuhinAdminChecks, self).check(cls, model, **kwargs)
         checks.extend(treebeard_in_installed_apps(cls=cls))
         checks.extend(treebeard_template_found(cls=cls))
+        checks.extend(treebeard_has_request_context_processor(cls=cls))
         return checks
