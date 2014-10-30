@@ -7,6 +7,8 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import Template, render_to_string
 from django.template.context import Context
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import cached_property
+
 try:
     from django.utils.six.moves import urllib_parse
     urlsplit = urllib_parse.urlsplit
@@ -130,6 +132,7 @@ class MenuItem(TimeStampedModel, MP_Node):
                          exc_info=1)
             return None
 
+    @cached_property
     def extra_context(self):
         template_data = self.extra_context_template()
         if template_data is None:
