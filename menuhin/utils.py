@@ -264,8 +264,11 @@ def marked_annotated_list(request, tree):
         if request.path == tree_node.uri:
             tree_node.is_active = True
             current_node = tree_node
+            logger.debug("Marked {node!r} as the current "
+                         "node".format(node=tree_node))
 
     if current_node is None:
+        logger.debug("No current node, returning tree without modifying it")
         return tree
 
     request_user = getattr(request, 'user', None)
@@ -289,6 +292,7 @@ def marked_annotated_list(request, tree):
                 if len(passes) > 0:
                     tree_node.vary_on_user = True
                     tree_node.user_passes_test = all(x.result for x in passes)
+        logger.debug("After mutating toggles - {node!r}".format(node=tree_node))
     return tree
 
 
