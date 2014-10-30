@@ -3,7 +3,7 @@ import logging
 from collections import namedtuple
 from django.contrib.sites.models import Site
 from classytags.core import Options
-from classytags.arguments import Argument
+from classytags.arguments import Argument, IntegerArgument
 from classytags.helpers import InclusionTag, AsTag
 from menuhin.models import MenuItem
 from menuhin.utils import marked_annotated_list
@@ -75,18 +75,23 @@ class ShowMenu(GetMenuItem, InclusionTag, AsTag):
     options = Options(
         Argument('menu_slug', required=False, resolve=True,
                  default='default'),
-        Argument('to_depth', required=False, resolve=True, default=100),
+        IntegerArgument('from_depth', required=False, resolve=True, default=0),
+        IntegerArgument('to_depth', required=False, resolve=True, default=100),
         Argument('template', required=False, resolve=True, default=None),
         'as', Argument('var', required=False, default=None, resolve=False)
     )
 
-    def get_context(self, context, menu_slug, to_depth, template, **kwargs):
+    def get_context(self, context, menu_slug, from_depth, to_depth, template, **kwargs):
         site = Site.objects.get_current()
+        # allow passing through None or "" ...
+        if not from_depth:
+            from_depth = 0
         # allow passing through None or "" ...
         if not to_depth:
             to_depth = 100
         base = {
             'to_depth': to_depth,
+            'from_depth': from_depth,
             'site': site,
             'template': template or self.template,
         }
@@ -105,7 +110,7 @@ class ShowMenu(GetMenuItem, InclusionTag, AsTag):
 
         menu_root.is_active = True
         depth_filtered_menu = MenuItem.get_published_annotated_list(
-            parent=menu_root, to_depth=to_depth)
+            parent=menu_root, from_depth=from_depth, to_depth=to_depth)
 
         if 'request' in context:
             marked_annotated_menu = marked_annotated_list(

@@ -158,6 +158,16 @@ class MenuItem(TimeStampedModel, MP_Node):
         if 'is_published' not in tree_kwargs:
             tree_kwargs.update(is_published=True)
 
+        both_depths = 'from_depth' in tree_kwargs and 'to_depth' in tree_kwargs
+        if both_depths and tree_kwargs['to_depth'] < tree_kwargs['from_depth']:
+            raise ValueError("maximum depth must be more than the minimum depth")  # noqa
+
+        if 'from_depth' in tree_kwargs:
+            minimum_depth = tree_kwargs.pop('from_depth')
+            if parent is not None:
+                minimum_depth += parent.get_depth()
+            tree_kwargs.update(depth__gte=minimum_depth)
+
         # shuffle the depth around as necessary ...
         if 'to_depth' in tree_kwargs:
             maximum_depth = tree_kwargs.pop('to_depth')
