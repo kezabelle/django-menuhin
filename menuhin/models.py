@@ -127,7 +127,7 @@ class MenuItem(TimeStampedModel, MP_Node):
         try:
             return render_to_string(template_paths)
         except TemplateDoesNotExist:
-            logger.error("None of these templates exist "
+            logger.debug("None of these templates exist "
                          "templates {choices}".format(choices=template_paths),
                          exc_info=1)
             return None
