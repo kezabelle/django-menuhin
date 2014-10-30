@@ -65,10 +65,16 @@ class MenuItem(TimeStampedModel, MP_Node):
 
     def __repr__(self):
         return ('<{name}: title: {title}, published: {status!s}, uri: {uri}, '
-                'site_id: {site}>'.format(name=self.__class__.__name__,
-                                          title=self.title,
-                                          status=self.is_published,
-                                          uri=self.uri, site=self.site_id))
+                'site_id: {site}, {toggles!r}>'.format(
+                    name=self.__class__.__name__, title=self.title,
+                    status=self.is_published, uri=self.uri, site=self.site_id,
+                    toggles=self.toggles()))
+
+    def toggles(self):
+        return ('<Toggles: active: {active!s}, ancestor: {ance!s}, '
+                'descendant: {desc!s}, sibling: {sib!s}'.format(
+                    active=self.is_active, ance=self.is_ancestor,
+                    desc=self.is_descendant, sib=self.is_sibling))
 
     def clean(self):
         if not self.menu_slug:
