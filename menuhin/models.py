@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 from collections import namedtuple
 from django.core.exceptions import ValidationError
-from django.template.loader import Template
+from django.template import TemplateDoesNotExist
+from django.template.loader import Template, render_to_string
 from django.template.context import Context
 from django.utils.encoding import python_2_unicode_compatible
 try:
@@ -108,6 +110,29 @@ class MenuItem(TimeStampedModel, MP_Node):
         elif self.title_has_balanced_format_params():
             return self.title.format(**context)
         return self.title
+
+    def extra_context_template(self):
+        template_paths = (
+            'menuhin/menuitem_context/%d/%s.json' % (self.site_id, self.menu_slug),  # noqa
+            'menuhin/menuitem_context/%s.json' % self.menu_slug,
+        )
+        try:
+            return render_to_string(template_paths)
+        except TemplateDoesNotExist:
+            logger.error("None of these templates exist "
+                         "templates {choices}".format(choices=template_paths),
+                         exc_info=1)
+            return None
+
+    def extra_context(self):
+        template_data = self.extra_context_template()
+        if template_data is None:
+            return {}
+        try:
+            return json.loads(template_data)
+        except (TypeError, ValueError) as e:
+            logger.error("Invalid JSON", exc_info=1)
+            return {}
 
     @classmethod
     def get_published_annotated_list(cls, parent=None, **tree_kwargs):
