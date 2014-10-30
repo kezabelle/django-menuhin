@@ -82,6 +82,9 @@ class ShowMenu(GetMenuItem, InclusionTag, AsTag):
 
     def get_context(self, context, menu_slug, to_depth, template, **kwargs):
         site = Site.objects.get_current()
+        # allow passing through None or "" ...
+        if not to_depth:
+            to_depth = 100
         base = {
             'to_depth': to_depth,
             'site': site,
