@@ -78,6 +78,28 @@ class MenuItem(TimeStampedModel, MP_Node):
                     active=self.is_active, ance=self.is_ancestor,
                     desc=self.is_descendant, sib=self.is_sibling))
 
+    def _css_classes(self):
+        if self.is_leaf:
+            yield 'leaf'
+        if self.is_root:
+            yield 'root'
+        if self.is_active:
+            yield 'selected'
+        if self.is_ancestor:
+            yield 'ancestor'
+        if self.is_sibling:
+            yield 'sibling'
+        if self.is_descendant:
+            yield 'descendant'
+        if self.vary_on_user:
+            yield 'varies'
+        if self.user_passes_test:
+            yield 'user_ok'
+
+    @cached_property
+    def css_classes(self):
+        return tuple(self._css_classes())
+
     def clean(self):
         if not self.menu_slug:
             self.menu_slug = set_menu_slug(self.uri, model=MenuItem)
