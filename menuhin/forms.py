@@ -34,6 +34,8 @@ class MenuItemTreeForm(MoveNodeForm):
 
     class Meta:
         model = MenuItem
+        fields = ['path', 'depth', 'numchild', 'menu_slug', 'site', 'title',
+                  'uri', 'is_published', '_position', '_ref_node_id']
 
 
 class ImportMenusForm(Form):
