@@ -21,7 +21,7 @@ def create_menu_url(sender, instance, created, **kwargs):
     title = get_title(instance)
     abs_url = instance.get_absolute_url()
     uri = URI(path=abs_url, title=title)
-    return update_all_urls(model=MenuItem, urls=(uri,))
+    return update_all_urls(model=MenuItem, possible_urls=(uri,))
 
 
 def update_old_url(sender, instance, raw, using, **kwargs):
