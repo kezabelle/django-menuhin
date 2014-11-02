@@ -201,7 +201,8 @@ def add_urls(model, urls, site_id=None):
 def update_all_urls(model, possible_urls, site_id=None):
     missing_urls = find_missing(model, urls=possible_urls, site_id=site_id)
     if missing_urls is not None:
-        return add_urls(model, urls=tuple(missing_urls), site_id=site_id)
+        missing_urls = tuple(missing_urls)
+        return tuple(add_urls(model, urls=missing_urls, site_id=site_id))
     return None
 
 
