@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from classytags.core import Options
 from classytags.arguments import Argument, IntegerArgument
 from classytags.helpers import InclusionTag, AsTag
+from django.utils.functional import lazy
 from menuhin.models import MenuItem
 from menuhin.utils import marked_annotated_list
 from django import template
@@ -182,16 +183,22 @@ class ShowBreadcrumbs(GetMenuItem, InclusionTag, AsTag):
                 yield ancestor
 
         def marked_children():
+            """
+            This returns a list because it's lazy, because it's not always
+            accessed. Repeated iterations will each do database queries.
+            """
+            out = []
             children = (menuitem.get_children()
                         .select_related('site')
                         .filter(is_published=True, site=site))
             for child in children:
                 child.is_descendant = True
-                yield child
+                out.append(child)
+            return out
 
         base.update(ancestor_nodes=tuple(marked_ancestors()),
                     menu_node=menuitem,
-                    child_nodes=tuple(marked_children()))
+                    child_nodes=lazy(marked_children, list))
         return base
 
     def render_tag(self, context, **kwargs):
