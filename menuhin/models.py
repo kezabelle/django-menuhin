@@ -165,6 +165,9 @@ class MenuItem(TimeStampedModel, MP_Node):
             logger.error("Invalid JSON", exc_info=1)
             return {}
 
+    def depth_ascii(self, value='-'):
+        return ''.ljust(self.depth, value)
+
     @classmethod
     def get_published_annotated_list(cls, parent=None, **tree_kwargs):
         """
