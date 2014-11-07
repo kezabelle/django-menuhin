@@ -2,6 +2,7 @@ import logging
 from collections import namedtuple
 import functools
 import operator
+from django.contrib.contenttypes.models import ContentType
 from django.utils.html import strip_tags
 from django.utils.functional import SimpleLazyObject, new_method_proxy
 from django.core.urlresolvers import resolve, Resolver404
@@ -197,9 +198,21 @@ def add_urls(model, urls, site_id=None):
     if site_id is None:
         site_id = Site.objects.get_current().pk
     for url in urls:
-        instance = model.add_root(uri=url.path, is_published=False,
-                                  title=url.title, site_id=site_id,
-                                  menu_slug=set_menu_slug(url.path))
+        kwargs = {
+            'uri': url.path,
+            'is_published': False,
+            'title': url.title,
+            'site_id': site_id,
+            'menu_slug': set_menu_slug(url.path)
+        }
+        original_obj = getattr(url, 'model_instance', None)
+        if original_obj is not None:
+            kwargs.update({
+                '_original_content_type': ContentType.objects.get_for_model(original_obj),
+                '_original_content_id': original_obj.pk
+            })
+
+        instance = model.add_root(**kwargs)
         yield MenuItemURI(instance=instance, uri=url)
 
 

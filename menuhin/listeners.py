@@ -20,7 +20,7 @@ def create_menu_url(sender, instance, created, **kwargs):
 
     title = get_title(instance)
     abs_url = instance.get_absolute_url()
-    uri = URI(path=abs_url, title=title)
+    uri = URI(path=abs_url, title=title, model_instance=instance)
     return update_all_urls(model=MenuItem, possible_urls=(uri,))
 
 

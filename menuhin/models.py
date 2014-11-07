@@ -278,7 +278,8 @@ class ModelMenuItemGroup(MenuItemGroup):
             if callable(abs_url):
                 abs_url = abs_url()
 
-            abs_obj = URI(path=abs_url, title=get_title(obj))
+            abs_obj = URI(path=abs_url, title=get_title(obj),
+                          model_instance=obj)
             if abs_obj not in final_urls:
                 final_urls.add(abs_obj)
 
@@ -292,11 +293,11 @@ class ModelMenuItemGroup(MenuItemGroup):
                 list_url = list_url()
 
             list_title = get_list_title(obj, url=list_url)
-            list_obj = URI(path=list_url, title=list_title)
+            list_obj = URI(path=list_url, title=list_title, model_instance=None)
             if list_title is not None and list_obj not in final_urls:
                 final_urls.add(list_obj)
         return final_urls
 
 
 # collects just a path and a page title, used for inserting.
-URI = namedtuple('URI', ('path', 'title'))
+URI = namedtuple('URI', ('path', 'title', 'model_instance'))

@@ -28,7 +28,7 @@ The idea in brief::
     class MyMenu(MenuItemGroup):
         def get_urls(self):
             for i in xrange(1, 10):
-                yield URI(title=i, url='/example/%d/' % i)
+                yield URI(title=i, url='/example/%d/' % i, model_instance=None)
 
 That's it.
 
