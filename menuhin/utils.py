@@ -79,7 +79,10 @@ def get_relations_for_request(model, request, relation):
     attr = getattr(item, relation)
     while callable(attr):
         attr = attr()
-    return RequestRelations(relations=attr.select_related('site'),
+    # this should be a MenuItem queryset ...
+    relations = (attr.defer('_original_content_type', '_original_content_id')
+                 .select_related('site'))
+    return RequestRelations(relations=relations,
                             obj=item, requested=relation,
                             path=path)
 
@@ -113,7 +116,9 @@ def get_menuitem_or_none(model, uri):
               'uri__iexact': uri,
               'is_published': True}
     try:
-        return model.objects.select_related('site').filter(**lookup)[:1][0]
+        return (model.objects.select_related('site')
+                .defer('_original_content_type', '_original_content_id')
+                .filter(**lookup)[:1][0])
     except IndexError:
         # multiple things can exist with the same URI, so we ask for the first,
         # best match, which may not exist, but won't raise DoesNotExist.

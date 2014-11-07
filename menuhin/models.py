@@ -2,6 +2,8 @@
 import json
 import logging
 from collections import namedtuple
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.template import TemplateDoesNotExist
 from django.template.loader import Template, render_to_string
@@ -25,12 +27,8 @@ from treebeard.mp_tree import MP_Node
 from django.db.models import (SlugField, ForeignKey, CharField, TextField,
                               BooleanField)
 from django.contrib.sites.models import Site
-# from model_utils.managers import PassThroughManager
 from model_utils.models import TimeStampedModel
-# from .querysets import MenuQuerySet
-from .utils import (get_relations_for_request, set_menu_slug, get_title,
-                    get_list_title)
-# from helpfulfields.models import ChangeTracking, Publishing
+from .utils import set_menu_slug, get_title, get_list_title
 from menuhin.text import (menu_v, menu_vp, title_label, title_help,
                           display_title_label, display_title_help,
                           menuitem_v, menuitem_vp, uri_v)
@@ -55,6 +53,14 @@ class MenuItem(TimeStampedModel, MP_Node):
                       help_text=display_title_help)
     uri = TextField(validators=[is_valid_uri], verbose_name=uri_v)
     is_published = BooleanField(default=False, db_index=True)
+    # these exist to allow a given menuitem to reference an original object,
+    # but are underscore prefixed to disallow access in the template.
+    _original_content_type = ForeignKey(ContentType, related_name='+',
+                                        default=None, null=True)
+    _original_content_id = CharField(max_length=255, db_index=True, blank=False,
+                                     default=None, null=True)
+    _original_object = GenericForeignKey(ct_field="_original_content_type",
+                                         fk_field="_original_content_id")
     is_active = False
     is_ancestor = False
     is_descendant = False
@@ -202,7 +208,7 @@ class MenuItem(TimeStampedModel, MP_Node):
             tree_kwargs.update(depth__lte=maximum_depth)
 
         qs = cls.get_tree(parent).select_related('site').filter(**tree_kwargs)
-        for node in qs:
+        for node in qs.defer('_original_content_type', '_original_content_id'):
             depth = node.get_depth()
             if start_depth is None:
                 start_depth = depth

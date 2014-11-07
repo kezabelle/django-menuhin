@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from classytags.core import Options
 from classytags.arguments import Argument, IntegerArgument
 from classytags.helpers import InclusionTag, AsTag
+from django.db.models.query_utils import DeferredAttribute
 from django.utils.functional import lazy
 from menuhin.models import MenuItem
 from menuhin.utils import marked_annotated_list
@@ -26,9 +27,13 @@ def parse_title(context, obj):
     if not hasattr(obj, 'parsed_title'):
         return ''
 
-    kwargs = dict((attr, getattr(obj, attr))
-                  for attr in obj._meta.get_all_field_names()
-                  if attr != 'title')
+    concrete_fieldnames = (x.attname for x in obj._meta.concrete_fields)
+    kwargs = dict(
+        (attr, getattr(obj, attr))
+        for attr in concrete_fieldnames
+        if not isinstance(obj.__class__.__dict__.get(attr), DeferredAttribute)
+        and attr != 'title'
+    )
     if 'request' in context:
         kwargs.update(request=context['request'])
     return obj.parsed_title(context=kwargs)
@@ -60,7 +65,9 @@ class GetMenuItem(object):
         lookup.update(site=site_instance, is_published=True)
 
         try:
-            obj = MenuItem.objects.select_related('site').get(**lookup)
+            obj = (MenuItem.objects.select_related('site')
+                   .defer('_original_content_type', '_original_content_id')
+                   .get(**lookup))
             return ItemWithMeta(obj=obj, query=lookup)
         except MenuItem.DoesNotExist:
             msg = "Unable to find menu item using {0!r}".format(lookup)
@@ -177,6 +184,7 @@ class ShowBreadcrumbs(GetMenuItem, InclusionTag, AsTag):
         def marked_ancestors():
             ancestors = (menuitem.get_ancestors()
                          .select_related('site')
+                         .defer('_original_content_type', '_original_content_id')
                          .filter(is_published=True, site=site))
             for ancestor in ancestors:
                 ancestor.is_ancestor = True

@@ -95,7 +95,10 @@ class MenuItemFakeInline(GenericInlineModelAdmin):
             url = obj.get_absolute_url()
             lookup = {'uri__iexact': url}
             try:
-                menu_root = MenuItem.objects.get(**lookup)
+                menu_root = (MenuItem.objects
+                             .defer('_original_content_type',
+                                    '_original_content_id')
+                             .get(**lookup))
             except MenuItem.DoesNotExist:
                 pass
             else:
