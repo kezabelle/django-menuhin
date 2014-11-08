@@ -3,7 +3,7 @@ import logging
 from functools import update_wrapper
 from django.core.exceptions import PermissionDenied
 from treebeard.admin import TreeAdmin
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.translation import ugettext_lazy as _
 try:
     from django.utils.encoding import force_text
@@ -115,7 +115,12 @@ class MenuItemAdmin(TreeAdmin):
 
         if do_post and form.is_valid():
             result = form.save()
-            self.message_user(request, "Imported successfully")
+            if result is None:
+                self.message_user(request, "No items imported",
+                                  level=messages.ERROR)
+            else:
+                msg = "Imported {count} successfully".format(count=len(result))
+                self.message_user(request, msg, level=messages.SUCCESS)
             return redirect(admin_urlname(self.model._meta, 'changelist'))
 
         templates = (
