@@ -4,7 +4,7 @@ import logging
 from collections import namedtuple
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.template import TemplateDoesNotExist
 from django.template.loader import Template, render_to_string
 from django.template.context import Context
@@ -115,6 +115,13 @@ class MenuItem(TimeStampedModel, MP_Node):
 
     def href(self):
         return self.uri
+
+    def original_object(self):
+        try:
+            return self._original_object
+        except ObjectDoesNotExist:
+            return None
+    original_object.do_not_call_in_templates = True
 
     def get_canonical_url(self):
         domain = self.site.domain.strip('/')
