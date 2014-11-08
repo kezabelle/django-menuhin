@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from functools import update_wrapper
+from django.core.exceptions import PermissionDenied
 from treebeard.admin import TreeAdmin
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
