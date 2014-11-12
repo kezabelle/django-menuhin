@@ -23,12 +23,17 @@ enough to allow for changes to come via client-input data (eg: users)
 
 The idea in brief::
 
-    from menuhin.models import MenuItemGroup, URI
+    from menuhin.models import MenuItemGroup, URI, ModelURI
 
     class MyMenu(MenuItemGroup):
         def get_urls(self):
             for i in xrange(1, 10):
-                yield URI(title=i, url='/example/%d/' % i, model_instance=None)
+                yield URI(title=i, url='/example/%d/' % i)
+
+            objs = MyModel.objects.all()
+            for obj in objs:
+                yield ModelURI(title='test', url=obj.get_absolute_url(),
+                               model_instance=obj)
 
 That's it.
 

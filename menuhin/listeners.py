@@ -3,7 +3,7 @@ try:
 except ImportError:
     from django.utils.encoding import force_unicode as force_text
 from django.contrib.sites.models import Site
-from .models import MenuItem, URI
+from .models import MenuItem, ModelURI
 from .utils import update_all_urls, get_title
 
 
@@ -20,7 +20,7 @@ def create_menu_url(sender, instance, created, **kwargs):
 
     title = get_title(instance)
     abs_url = instance.get_absolute_url()
-    uri = URI(path=abs_url, title=title, model_instance=instance)
+    uri = ModelURI(path=abs_url, title=title, model_instance=instance)
     return update_all_urls(model=MenuItem, possible_urls=(uri,))
 
 
