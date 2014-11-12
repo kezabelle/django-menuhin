@@ -2,7 +2,12 @@
 import json
 import logging
 from collections import namedtuple
-from django.contrib.contenttypes.fields import GenericForeignKey
+
+try:
+    from django.contrib.contenttypes.fields import GenericForeignKey
+except ImportError:  # < Django 1.7
+    from django.contrib.contenttypes.generic import GenericForeignKey
+
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.template import TemplateDoesNotExist
