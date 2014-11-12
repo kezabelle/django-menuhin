@@ -27,13 +27,18 @@ def parse_title(context, obj):
     if not hasattr(obj, 'parsed_title'):
         return ''
 
-    concrete_fieldnames = (x.attname for x in obj._meta.concrete_fields)
-    kwargs = dict(
-        (attr, getattr(obj, attr))
-        for attr in concrete_fieldnames
-        if not isinstance(obj.__class__.__dict__.get(attr), DeferredAttribute)
-        and attr != 'title'
+    # concrete_fields doesn't exist under < Django 1.6
+    try:
+        concrete_fields = (x for x in obj._meta.concrete_fields)
+    except AttributeError:
+        concrete_fields = (field for field in obj._meta.fields
+                           if field.column is not None)
+    concrete_fieldnames = (x.attname for x in concrete_fields)
+    undeferred = (
+        safe_attr for safe_attr in concrete_fieldnames
+        if not isinstance(obj.__class__.__dict__.get(safe_attr), DeferredAttribute)  # noqa
     )
+    kwargs = dict((attr, getattr(obj, attr)) for attr in undeferred)
     if 'request' in context:
         kwargs.update(request=context['request'])
     return obj.parsed_title(context=kwargs)
