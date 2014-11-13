@@ -19,7 +19,9 @@ except ImportError:  # pragma: no cover
 
 register = template.Library()
 logger = logging.getLogger(__name__)
+
 ItemWithMeta = namedtuple('ItemWithMeta', 'obj query')
+FieldAttrNames = namedtuple('FieldAttrNames', 'name attname')
 
 
 @register.simple_tag(takes_context=True)
@@ -33,12 +35,21 @@ def parse_title(context, obj):
     except AttributeError:
         concrete_fields = (field for field in obj._meta.fields
                            if field.column is not None)
-    concrete_fieldnames = (x.attname for x in concrete_fields)
-    undeferred = (
-        safe_attr for safe_attr in concrete_fieldnames
-        if not isinstance(obj.__class__.__dict__.get(safe_attr), DeferredAttribute)  # noqa
+    concrete_fieldnames_attnames = tuple(
+        FieldAttrNames(name=x.name, attname=x.attname)
+        for x in concrete_fields
     )
-    kwargs = dict((attr, getattr(obj, attr)) for attr in undeferred)
+    # check both name and attname because deferring _original_content_type
+    # requires us check both ...
+    undeferred = (
+        possible_attr for possible_attr in concrete_fieldnames_attnames
+        if not isinstance(obj.__class__.__dict__.get(possible_attr.name), DeferredAttribute)  # noqa
+        and not isinstance(obj.__class__.__dict__.get(possible_attr.attname), DeferredAttribute)  # noqa
+    )
+    final_fieldnames = (final_attr for final_attr in undeferred
+                        if final_attr.name != 'title')
+    kwargs = dict((attr.name, getattr(obj, attr.name))
+                  for attr in final_fieldnames)
     if 'request' in context:
         kwargs.update(request=context['request'])
     return obj.parsed_title(context=kwargs)
