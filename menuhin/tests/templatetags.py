@@ -20,7 +20,8 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
             'request': req,
         })
         rendered = template.render(context).strip()
-        self.assertIn('<ol class="breadcrumbs">', rendered)
+        self.assertIn('<ol class="breadcrumbs" itemscope '
+                      'itemtype="http://schema.org/Breadcrumb">', rendered)
         self.assertIn(
             "breadcrumbs-ancestor breadcrumbs-first breadcrumbs-root",
             rendered)
@@ -31,7 +32,9 @@ class ShowBreadcrumbsTestCase(TestCaseUsingDB):
             'breadcrumbs-self breadcrumbs-last breadcrumb-selected',
             rendered)
         self.assertIn(
-            '<a href="/HI" class="breadcrumbs-self-link">231</a>',
+            '<a href="/HI" class="breadcrumbs-self-link" itemprop="url">'
+            '<span class="breadcrumbs-self-value" itemprop="title">231</span>'
+            '</a>',
             rendered)
 
     def test_basic_usage_as_var(self):
