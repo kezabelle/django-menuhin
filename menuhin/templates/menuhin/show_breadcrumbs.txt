@@ -1,0 +1,7 @@
+{% if ancestor_nodes %}
+{% load menus %}
+{% if menu_node %}{% if menu_node.title_needs_parsing %}{% parse_title menu_node %}{% else %}{{ menu_node.title }}{% endif %}{% endif %}
+{% for ancestor in ancestor_nodes %}
+| {% if ancestor.title_needs_parsing %}{% parse_title ancestor %}{% else %}{{ ancestor.title }}{% endif %}
+{% endfor %}
+{% endif %}
