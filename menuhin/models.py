@@ -11,7 +11,8 @@ except ImportError:  # < Django 1.7
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.template import TemplateDoesNotExist
-from django.template.loader import Template, render_to_string
+from django.template import Template
+from django.template.loader import render_to_string
 from django.template.context import Context
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
