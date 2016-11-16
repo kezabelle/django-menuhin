@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.conf.urls import patterns, url, include
-from django.contrib import admin
+from __future__ import unicode_literals, absolute_import
+from django.conf.urls import url, include
 
-urlpatterns = patterns('',
-    url(r'^admin_mountpoint/', include(admin.site.urls)),
-)
+
+urlpatterns = [
+]
+

@@ -1,4 +1,7 @@
 include LICENSE
 include README.rst
-include requirements.txt
-recursive-include menuhin *.html *.png *.gif *.js *.jpg *.jpeg *.svg *.py *.css *.eot *.ttf *.woff
+include tox.ini
+include Makefile
+include .coveragerc
+include CHANGELOG
+global-include *.rst *.py *.html
