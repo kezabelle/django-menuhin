@@ -2,14 +2,19 @@
 from __future__ import absolute_import, unicode_literals
 import json
 from collections import namedtuple
+from itertools import chain
+from operator import attrgetter
+
 import swapper
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models
+from django.db import transaction
 from django.template import Context
 from django.template import Template
 from django.template import TemplateDoesNotExist
+from django.template.defaultfilters import slugify
 from django.template.loader import render_to_string
 from django.utils.encoding import force_text
 from django.utils.functional import cached_property
@@ -123,6 +128,25 @@ fk_field="_original_content_id")
         except (TypeError, ValueError) as e:
             return {}
 
+    @classmethod
+    def get_published_annotated_list(cls, parent=None, min_depth=None, max_depth=None):
+        qs = cls.get_tree(parent).filter(is_published=True)
+
+        parent_depth = 0
+        if parent is not None:
+            parent_depth = parent.get_depth()
+
+        if min_depth:
+            if parent is not None:
+                min_depth += parent_depth
+            qs = qs.filter(depth__gte=min_depth)
+        if max_depth:
+            if parent is not None:
+                max_depth += parent_depth
+            qs = qs.filter(depth__lte=max_depth)
+        qs = qs.defer('_original_content_type', '_original_content_id')
+        return cls.get_annotated_list_qs(qs)
+
     class Meta:
         index_together = (
             ('_original_content_type', '_original_content_id'),
@@ -136,6 +160,10 @@ class MenuItem(BaseMenuItem):
 
 
 class MenuItemGroup(object):
+    @property
+    def verbose_name(self):
+        raise NotImplementedError("Subclasses should implement this.")
+
     def get_urls(self, *args, **kwargs):
         """
         This may yield individual items, or just return an iterable.
@@ -189,6 +217,10 @@ class ModelMenuItemGroup(MenuItemGroup):
     def get_model(self):
         return self.model
 
+    @property
+    def verbose_name(self):
+        return self.get_model()._meta.verbose_name
+
     def get_queryset(self):
         return self.get_model().objects.all().iterator()
 
@@ -202,3 +234,75 @@ class ModelMenuItemGroup(MenuItemGroup):
                 final_urls.add(abs_obj)
                 seen_urls.add(abs_obj.path)
         return final_urls
+
+
+class MenuRegistry(object):
+    __slots__ = ('registry',)
+    def __init__(self):
+        self.registry = set()
+
+    def register(self, item):
+        self.registry.add(item)
+
+    def unregister(self, item):
+        self.registry.remove(item)
+
+    def list(self):
+        byname = attrgetter('verbose_name')
+        bylen = attrgetter('path')
+        menus = sorted(self.registry, key=byname)
+        for menu in menus:
+            menu = menu()
+            urls = sorted(menu.get_urls(), key=bylen)
+            yield byname(menu), urls
+
+    def existing(self):
+        model = swapper.load_model('menuhin', 'MenuItem')
+        existing = model.objects.all()  #.values_list('uri', flat=True))
+        return existing
+
+    def items_to_update(self):
+        existing = set(self.existing().values_list('uri', flat=True))
+        items = tuple(self.list())
+        for menu, urls in items:
+            urls_to_update = []
+            for url in urls:
+                if url.path not in existing:
+                    urls_to_update.append(url)
+            if urls_to_update:
+                yield menu, urls_to_update
+
+    @transaction.atomic
+    def update(self):
+        items_to_update = tuple(self.items_to_update())
+        items_to_update = tuple(chain.from_iterable(x[1] for x in items_to_update))
+        if items_to_update:
+            model = swapper.load_model('menuhin', 'MenuItem')
+            added = []
+            for item_to_update in items_to_update:
+                path_slug = slugify(item_to_update.path)
+                if not path_slug:
+                    path_slug = slugify(item_to_update.title)
+                if not path_slug:
+                    path_slug = 'default'
+                kwargs = {
+                    'uri': item_to_update.path,
+                    'is_published': False,
+                    'title': item_to_update.title,
+                    'menu_slug': path_slug,
+                }
+                original_obj = getattr(item_to_update, 'obj', None)
+                if original_obj is not None:
+                    kwargs.update({
+                        '_original_content_type': ContentType.objects.get_for_model(
+                            original_obj),
+                        '_original_content_id': original_obj.pk
+                    })
+                instance = model.add_root(**kwargs)
+                added.append(instance)
+            return added
+        else:
+            return None
+
+
+registry = MenuRegistry()

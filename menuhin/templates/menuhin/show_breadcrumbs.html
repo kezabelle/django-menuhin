@@ -1,0 +1,9 @@
+{% if menu_nodes %}
+<ol class="breadcrumbs" itemscope itemtype="http://schema.org/Breadcrumb">
+    {% for ancestor in menu_nodes %}
+        <li class="breadcrumbs-ancestor{% if forloop.first %} breadcrumbs-first{% endif %}{% if ancestor.is_leaf %} breadcrumbs-leaf{% endif %}{% if ancestor.is_root %} breadcrumbs-root{% endif %}">
+        <a href="{{ ancestor.get_absolute_url }}" class="breadcrumbs-ancestor-link" itemprop="url" {% if ancestor.is_root %}rel="home"{% endif %}><span class="breadcrumbs-ancestor-value" itemprop="title">{{ ancestor.title }}</span></a>
+        </li>
+    {% endfor %}
+</ol>
+{% endif %}
