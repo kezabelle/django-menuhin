@@ -14,6 +14,7 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from treebeard.admin import TreeAdmin
 
+from menuhin.forms import MenuItemTreeForm
 from .models import MenuItem, registry
 
 
@@ -44,6 +45,19 @@ class MenuItemAdmin(TreeAdmin):
     readonly_fields = ('menu_slug', 'created', 'modified')
     change_list_template = 'admin/menuhin/menuitem/tree_change_list.html'
     actions = [change_published_status]
+    form = MenuItemTreeForm
+    fieldsets = [
+        (None, {
+            'fields': ('title', 'uri', 'is_published'),
+        }),
+        ('metadata', {
+            'fields': ('menu_slug',),
+        }),
+        ('location', {
+            'classes': (),
+            'fields': ('_position', '_ref_node_id'),
+        }),
+    ]
 
     def get_urls(self):
         from django.conf.urls import url
