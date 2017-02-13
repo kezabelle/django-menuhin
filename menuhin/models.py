@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 import json
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from itertools import chain
 from operator import attrgetter
 
@@ -64,7 +64,6 @@ class TemplatedTitle(object):
         elif self.has_balanced_format_params():
             return self.title.format(**context)
         return self.title
-
 
 @python_2_unicode_compatible
 class BaseMenuItem(MP_Node):
@@ -129,23 +128,25 @@ fk_field="_original_content_id")
             return {}
 
     @classmethod
-    def get_published_annotated_list(cls, parent=None, min_depth=None, max_depth=None):
+    def get_published_annotated_list(cls, parent, min_depth, max_depth):
         qs = cls.get_tree(parent).filter(is_published=True)
-
-        parent_depth = 0
-        if parent is not None:
-            parent_depth = parent.get_depth()
-
-        if min_depth:
-            if parent is not None:
-                min_depth += parent_depth
+        # parent_depth = parent.get_depth()
+        if min_depth is not None:
+            # min_depth += parent_depth
             qs = qs.filter(depth__gte=min_depth)
-        if max_depth:
-            if parent is not None:
-                max_depth += parent_depth
+
+        if max_depth is not None:
+            # max_depth += parent_depth
             qs = qs.filter(depth__lte=max_depth)
-        qs = qs.defer('_original_content_type', '_original_content_id')
-        return cls.get_annotated_list_qs(qs)
+        items = tuple(qs)  #cls.get_annotated_list_qs(qs)
+        if items:
+            def build_tree(parent):
+                children = tuple(n for n in items if n.is_child_of(parent))
+                parent.children = children
+                for child in children:
+                    build_tree(parent=child)
+            ox = [build_tree(parent=x) for x in items]
+            return tuple(item for item in items if item.get_depth() == min_depth)
 
     class Meta:
         index_together = (

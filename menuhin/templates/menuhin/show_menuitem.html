@@ -1,0 +1,6 @@
+<li class="menu-item">
+    <a class="menu-item-link" href="{{ node.get_absolute_url }}">{{ node.title }}</a>
+    {% if node.children %}
+    {% include menu_template with menu_nodes=node.children %}
+    {% endif %}
+</li>
