@@ -54,7 +54,7 @@ def show_menu(context, menu_slug, start=0, levels=100,
     menu_items = (menu_root.__class__.get_published_annotated_list(
         parent=menu_root, min_depth=start, max_depth=max_depth))
     with context.push({'menu_nodes': menu_items, 'menu_template': template}):
-        result = render_to_string(template, context=context)
+        result = render_to_string(template, context=context.flatten())
     # load_widgets(context, menuhin_show_menu='menuhin/show_menu.html', _soft=True)
     #     # level3 = {'title': 'lol', 'children':[]}
     #     # level2 = {'title': 'test2', 'children': [level3]}
@@ -80,5 +80,5 @@ def show_breadcrumbs(context, menu_slug):
     ancestors = list(menu_root.get_ancestors().filter(is_published=True))
     ancestors.append(menu_root)
     with context.push({'menu_nodes': ancestors}):
-        result = render_to_string("menuhin/show_breadcrumbs.html", context=context)
+        result = render_to_string("menuhin/show_breadcrumbs.html", context=context.flatten())
     return result
